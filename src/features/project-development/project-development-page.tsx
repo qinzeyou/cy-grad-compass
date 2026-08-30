@@ -28,6 +28,7 @@ function asError(reason: unknown): string { return reason instanceof Error ? rea
 export function ProjectDevelopmentPage(): ReactElement {
   const [sessions, setSessions] = useState<DevelopmentSession[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [selectedProjectId, setSelectedProjectId] = useState('');
   const [activeSession, setActiveSession] = useState<DevelopmentSessionDetail | null>(null);
   const [runBySession, setRunBySession] = useState<Record<string, DevelopmentRunView>>({});
   const [error, setError] = useState('');
@@ -36,7 +37,7 @@ export function ProjectDevelopmentPage(): ReactElement {
 
   useEffect(() => {
     void Promise.all([listSessions(), fetchProjectList({ status: 'all' })]).then(async ([items, allProjects]) => {
-      setSessions(items); setProjects(allProjects); if (items[0]) setActiveSession(await getSession(items[0].id));
+      setSessions(items); setProjects(allProjects);
     }).catch((reason: unknown) => setError(asError(reason)));
   }, []);
 
@@ -60,11 +61,22 @@ export function ProjectDevelopmentPage(): ReactElement {
   }), [activeSession?.id]);
 
   const selectSession = (id: string) => { setError(''); void getSession(id).then(setActiveSession).catch((reason: unknown) => setError(asError(reason))); };
-  const handleCreate = (projectId: string) => { setCreating(true); setError(''); void createSession(projectId).then((created) => { setActiveSession(created); return listSessions(); }).then(setSessions).catch((reason: unknown) => setError(asError(reason))).finally(() => setCreating(false)); };
+  const selectProject = (projectId: string) => {
+    setSelectedProjectId(projectId);
+    setActiveSession(null);
+    setError('');
+    const firstSession = sessions.find((session) => session.projectId === projectId);
+    if (firstSession) void getSession(firstSession.id).then(setActiveSession).catch((reason: unknown) => setError(asError(reason)));
+  };
+  const handleCreate = () => {
+    if (!selectedProjectId) return;
+    setCreating(true); setError('');
+    void createSession(selectedProjectId).then((created) => { setActiveSession(created); return listSessions(); }).then(setSessions).catch((reason: unknown) => setError(asError(reason))).finally(() => setCreating(false));
+  };
   const handleSend = (text: string) => { if (!activeSession) return; setError(''); setRunBySession((current) => ({ ...current, [activeSession.id]: { ...EMPTY_RUN, status: 'running', startedAt: Date.now(), currentAction: '正在启动 Codex', logs: [{ id: `${Date.now()}-start`, label: '正在启动 Codex' }] } })); void sendMessage(activeSession.id, text).catch((reason: unknown) => { setError(asError(reason)); setRunBySession((current) => ({ ...current, [activeSession.id]: { ...(current[activeSession.id] ?? EMPTY_RUN), status: 'error', currentAction: '启动失败' } })); }); };
   const handleStart = () => { if (!activeSession) return; setError(''); setRunBySession((current) => ({ ...current, [activeSession.id]: { ...EMPTY_RUN, status: 'running', startedAt: Date.now(), currentAction: '正在启动 Codex', logs: [{ id: `${Date.now()}-start`, label: '正在启动 Codex' }] } })); void startDevelopment(activeSession.id).catch((reason: unknown) => { setError(asError(reason)); setRunBySession((current) => ({ ...current, [activeSession.id]: { ...(current[activeSession.id] ?? EMPTY_RUN), status: 'error', currentAction: '启动失败' } })); }); };
   const handleStop = () => { if (activeSession) void stopDevelopment(activeSession.id).catch((reason: unknown) => setError(asError(reason))); };
   const canCreate = useMemo(() => projects.length > 0, [projects.length]);
-  if (!activeSession) return <div className="development-workbench"><DevelopmentSessionList sessions={sessions} projects={projects} activeId="" onSelect={selectSession} onCreate={handleCreate} creating={creating} /><div className="development-empty-state">{canCreate ? '点击左侧 ＋ 创建开发会话' : '请先在项目管理中创建项目'}</div><DevelopmentRunPanel run={EMPTY_RUN} onStop={() => undefined} /></div>;
-  return <div className="development-workbench"><DevelopmentSessionList sessions={sessions} projects={projects} activeId={activeSession.id} onSelect={selectSession} onCreate={handleCreate} creating={creating} /><DevelopmentChatPanel session={activeSession} runStatus={activeRun.status} error={error} onSend={handleSend} onStart={handleStart} /><DevelopmentRunPanel run={activeRun} onStop={handleStop} /></div>;
+  if (!activeSession) return <div className="development-workbench"><DevelopmentSessionList sessions={sessions.filter((session) => session.projectId === selectedProjectId)} projects={projects} selectedProjectId={selectedProjectId} activeId="" onProjectSelect={selectProject} onSelect={selectSession} onCreate={handleCreate} creating={creating} /><div className="development-empty-state">{!selectedProjectId ? (canCreate ? '请先选择一个项目' : '请先在项目管理中创建项目') : '点击左侧 ＋ 创建开发会话'}</div><DevelopmentRunPanel run={EMPTY_RUN} onStop={() => undefined} /></div>;
+  return <div className="development-workbench"><DevelopmentSessionList sessions={sessions.filter((session) => session.projectId === selectedProjectId)} projects={projects} selectedProjectId={selectedProjectId} activeId={activeSession.id} onProjectSelect={selectProject} onSelect={selectSession} onCreate={handleCreate} creating={creating} /><DevelopmentChatPanel session={activeSession} runStatus={activeRun.status} error={error} onSend={handleSend} onStart={handleStart} /><DevelopmentRunPanel run={activeRun} onStop={handleStop} /></div>;
 }
