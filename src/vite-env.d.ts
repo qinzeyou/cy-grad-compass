@@ -16,7 +16,7 @@ import type {
   DevelopmentEventEnvelope,
   DevelopmentSession,
   DevelopmentSessionDetail,
-} from '../electron/development/development-types';
+} from './features/project-development/project-development-types';
 
 declare global {
   interface Window {

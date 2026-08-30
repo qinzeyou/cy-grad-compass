@@ -39,3 +39,21 @@ test('讨论使用 read-only，恢复开发使用 workspace-write', async () => 
   assert.ok(invocations.flat().every((item) => item !== 'danger-full-access'));
   assert.equal(events.filter((event) => event.type === 'thread-started').length, 2);
 });
+
+test('stop 终止活动进程并发布 stopped 退出事件', async () => {
+  let process: FakeProcess | undefined;
+  const controller = new CodexController({
+    spawn: () => {
+      process = new FakeProcess();
+      return process;
+    },
+    terminate: async () => { process?.finish(1); },
+  });
+  const events: DevelopmentEvent[] = [];
+  controller.subscribe((event) => events.push(event));
+  const run = controller.run({ projectPath: 'C:\\project', prompt: '执行', sandbox: 'workspace-write' });
+  await controller.stop();
+  await run;
+  assert.deepEqual(events.at(-1), { type: 'process-exited', exitCode: 1, stopped: true });
+  assert.equal(controller.isRunning, false);
+});
