@@ -601,7 +601,7 @@ git commit -m "feat: connect project development workspace to Codex"
 - Consumes: Tasks 1-4 的完整闭环。
 - Produces: 可交付的验证证据和使用说明。
 
-- [ ] **Step 1: 更新 README 使用说明**
+- [x] **Step 1: 更新 README 使用说明**
 
 写明：
 
@@ -617,19 +617,19 @@ git commit -m "feat: connect project development workspace to Codex"
 
 将旧设计文档顶部标记为“模拟版历史设计，已由真实模式规格替代”，并链接新规格。
 
-- [ ] **Step 2: 运行全量自动化测试**
+- [x] **Step 2: 运行全量自动化测试**
 
 Run: `npm test`
 
 Expected: 所有 database、service、validation、Codex、development 测试通过，0 failed。
 
-- [ ] **Step 3: 运行独立生产构建**
+- [x] **Step 3: 运行独立生产构建**
 
 Run: `npm run build`
 
 Expected: Vite 与 Electron TypeScript 构建成功。
 
-- [ ] **Step 4: 检查危险参数和模拟残留**
+- [x] **Step 4: 检查危险参数和模拟残留**
 
 Run:
 
@@ -639,13 +639,13 @@ rg -n "danger-full-access|dangerously-bypass|RUN_STEPS|模拟回复|模拟执行
 
 Expected: 无结果；如果测试需要包含危险字符串来断言禁止项，只允许出现在测试断言中，不允许出现在生产文件。
 
-- [ ] **Step 5: 检查 Git 差异**
+- [x] **Step 5: 检查 Git 差异**
 
 Run: `git diff --check && git status --short`
 
 Expected: 无空白错误，仅显示本任务预期文档修改。
 
-- [ ] **Step 6: 提交验证与文档**
+- [x] **Step 6: 提交验证与文档**
 
 ```bash
 git add README.md docs/project-development-workbench-design.md docs/superpowers/plans/2026-08-30-real-project-development.md
