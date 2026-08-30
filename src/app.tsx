@@ -2,21 +2,24 @@ import { useEffect, useState, type ReactElement } from 'react';
 import { ProjectManagementPage } from './features/project-management/project-management-page';
 import { TemplatePanel } from './features/project-management/template-panel';
 import { ProjectStatisticsPage } from './features/project-statistics/project-statistics-page';
+import { ProjectDevelopmentPage } from './features/project-development/project-development-page';
 import type { EmptyAction } from './features/project-statistics/recent-project-list';
 import type { ProjectStatusFilter } from './features/project-statistics/project-statistics-types';
 
-type NavKey = 'dashboard' | 'projects' | 'templates';
+type NavKey = 'dashboard' | 'projects' | 'templates' | 'development';
 
 const NAV_ITEMS: Array<{ key: NavKey; label: string }> = [
   { key: 'dashboard', label: '仪表盘' },
   { key: 'projects', label: '项目管理' },
   { key: 'templates', label: '模板管理' },
+  { key: 'development', label: '项目开发' },
 ];
 
 const PAGE_TITLES: Record<NavKey, string> = {
   dashboard: '仪表盘',
   projects: '项目管理',
   templates: '模板管理',
+  development: '项目开发',
 };
 
 // 中文注释：应用外壳，负责主导航切换、统计卡片跳转筛选和空状态入口的真实跳转。
@@ -91,6 +94,7 @@ export function App(): ReactElement {
         )}
 
         {activeNav === 'templates' && <TemplatePanel />}
+        {activeNav === 'development' && <ProjectDevelopmentPage />}
       </main>
     </div>
   );
