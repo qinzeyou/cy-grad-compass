@@ -37,7 +37,7 @@
 - Consumes: `AppDatabase`、`ProjectRepository.findById(id)` 返回的项目 ID 关联。
 - Produces: `DevelopmentRepository.createSession`、`listSessions`、`getSession`、`addMessage`、`saveThreadId`、`updateTitle`、`updatePhase`。
 
-- [ ] **Step 1: 写仓储失败测试**
+- [x] **Step 1: 写仓储失败测试**
 
 在 `electron/tests/development-repository.test.ts` 创建内存数据库测试，明确会话、消息、thread 和 phase 行为：
 
@@ -85,13 +85,13 @@ test('开发会话可以持久化消息、Codex thread 和开发阶段', () => {
 });
 ```
 
-- [ ] **Step 2: 运行测试确认 RED**
+- [x] **Step 2: 运行测试确认 RED**
 
 Run: `npm run build`
 
 Expected: TypeScript 失败，提示找不到 `../development/development-repository.js`。
 
-- [ ] **Step 3: 增加迁移和共享类型**
+- [x] **Step 3: 增加迁移和共享类型**
 
 在 `MIGRATIONS` 末尾加入两条幂等建表语句：
 
@@ -146,7 +146,7 @@ export interface DevelopmentSessionDetail extends DevelopmentSession {
 }
 ```
 
-- [ ] **Step 4: 实现最小仓储**
+- [x] **Step 4: 实现最小仓储**
 
 实现以下签名，SQL 全部使用参数绑定：
 
@@ -166,13 +166,13 @@ export class DevelopmentRepository {
 
 `listSessions` 和 `getSession` 使用 `JOIN projects` 取得 `project_name`，会话按 `updated_at DESC` 排序，消息按 `created_at ASC, id ASC` 排序。`addMessage` 在同一事务内插入消息并把会话 `updated_at` 更新为消息时间。`connection.ts` 在迁移前执行 `PRAGMA foreign_keys = ON;`。
 
-- [ ] **Step 5: 运行仓储测试确认 GREEN**
+- [x] **Step 5: 运行仓储测试确认 GREEN**
 
 Run: `npm run build && node --test dist-electron/tests/development-repository.test.js`
 
 Expected: 1 test passed, 0 failed。
 
-- [ ] **Step 6: 提交数据层**
+- [x] **Step 6: 提交数据层**
 
 ```bash
 git add electron/database/migrations.ts electron/database/connection.ts electron/development/development-types.ts electron/development/development-repository.ts electron/tests/development-repository.test.ts
@@ -194,7 +194,7 @@ git commit -m "feat: persist AI development sessions"
 - Consumes: 本机 `codex.cmd`、项目绝对路径、可选 thread ID、prompt、sandbox。
 - Produces: `DevelopmentEvent` 流和 `CodexController.run()` / `stop()`。
 
-- [ ] **Step 1: 写 JSONL 解析失败测试**
+- [x] **Step 1: 写 JSONL 解析失败测试**
 
 ```ts
 import assert from 'node:assert/strict';
@@ -225,13 +225,13 @@ test('损坏 JSONL 转成日志且不抛错', () => {
 });
 ```
 
-- [ ] **Step 2: 运行解析测试确认 RED**
+- [x] **Step 2: 运行解析测试确认 RED**
 
 Run: `npm run build`
 
 Expected: TypeScript 失败，提示找不到 `codex-event-parser.js`。
 
-- [ ] **Step 3: 实现稳定事件解析器**
+- [x] **Step 3: 实现稳定事件解析器**
 
 在 `development-types.ts` 增加：
 
@@ -251,7 +251,7 @@ export type DevelopmentEvent =
 
 `parseCodexJsonLine(line)` 映射规格中的事件；命令输出使用 `output.slice(-4000)`；未知合法事件返回 `{ type: 'log', text: line }`。
 
-- [ ] **Step 4: 写控制器失败测试**
+- [x] **Step 4: 写控制器失败测试**
 
 用假的 `spawn` 记录参数并发出 JSONL，断言权限和恢复参数：
 
@@ -278,13 +278,13 @@ test('讨论使用 read-only，恢复开发使用 workspace-write', async () => 
 });
 ```
 
-- [ ] **Step 5: 运行控制器测试确认 RED**
+- [x] **Step 5: 运行控制器测试确认 RED**
 
 Run: `npm run build`
 
 Expected: TypeScript 失败，提示找不到 `codex-controller.js`。
 
-- [ ] **Step 6: 实现最小控制器**
+- [x] **Step 6: 实现最小控制器**
 
 控制器公开：
 
@@ -319,13 +319,13 @@ export class CodexController {
 
 Windows 默认命令使用 `codex.cmd`，`spawn` 配置为 `{ cwd: projectPath, shell: false, windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'] }`。停止时执行 `taskkill /PID <pid> /T /F`，并等待原进程退出。
 
-- [ ] **Step 7: 运行解析器和控制器测试确认 GREEN**
+- [x] **Step 7: 运行解析器和控制器测试确认 GREEN**
 
 Run: `npm run build && node --test dist-electron/tests/codex-event-parser.test.js dist-electron/tests/codex-controller.test.js`
 
 Expected: 所有测试通过，参数中不存在危险权限标志。
 
-- [ ] **Step 8: 提交 Codex 运行层**
+- [x] **Step 8: 提交 Codex 运行层**
 
 ```bash
 git add electron/development/codex-event-parser.ts electron/development/codex-controller.ts electron/development/development-types.ts electron/tests/codex-event-parser.test.ts electron/tests/codex-controller.test.ts
@@ -349,7 +349,7 @@ git commit -m "feat: run Codex safely for project development"
 - Consumes: `ProjectRepository`、`DevelopmentRepository`、`CodexController`。
 - Produces: `development:*` IPC 请求和 `development:event` 推送。
 
-- [ ] **Step 1: 写服务失败测试**
+- [x] **Step 1: 写服务失败测试**
 
 ```ts
 test('讨论保存用户与 AI 消息并保存 thread id', async () => {
@@ -381,13 +381,13 @@ test('开始开发切换 phase 并使用 workspace-write', async () => {
 });
 ```
 
-- [ ] **Step 2: 运行服务测试确认 RED**
+- [x] **Step 2: 运行服务测试确认 RED**
 
 Run: `npm run build`
 
 Expected: TypeScript 失败，提示找不到 `development-service.js`。
 
-- [ ] **Step 3: 实现服务业务规则**
+- [x] **Step 3: 实现服务业务规则**
 
 公开签名：
 
@@ -421,7 +421,7 @@ export class DevelopmentService {
 - thread 和 AI 消息落库；
 - 项目路径不存在返回“项目目录不存在”。
 
-- [ ] **Step 4: 写 IPC 失败测试**
+- [x] **Step 4: 写 IPC 失败测试**
 
 ```ts
 test('开发 IPC 注册请求通道并向窗口转发事件', async () => {
@@ -436,7 +436,7 @@ test('开发 IPC 注册请求通道并向窗口转发事件', async () => {
 });
 ```
 
-- [ ] **Step 5: 实现 IPC、main 和 preload**
+- [x] **Step 5: 实现 IPC、main 和 preload**
 
 注册通道：
 
@@ -474,13 +474,13 @@ subscribeDevelopmentEvents(listener: (envelope: DevelopmentEventEnvelope) => voi
 
 具体退出流程使用 `before-quit` 防止异步清理被跳过：第一次收到退出事件时 `preventDefault()`，设置 `shutdownStarted = true`，等待 `developmentService.dispose()` 和数据库关闭完成后再次调用 `app.quit()`；第二次事件因 guard 已设置而直接放行。
 
-- [ ] **Step 6: 运行服务和 IPC 测试确认 GREEN**
+- [x] **Step 6: 运行服务和 IPC 测试确认 GREEN**
 
 Run: `npm run build && node --test dist-electron/tests/development-service.test.js dist-electron/tests/development-ipc.test.js`
 
 Expected: 所有服务和 IPC 测试通过。
 
-- [ ] **Step 7: 提交主进程闭环**
+- [x] **Step 7: 提交主进程闭环**
 
 ```bash
 git add electron/development electron/main.ts electron/preload.ts src/vite-env.d.ts electron/tests/development-service.test.ts electron/tests/development-ipc.test.ts
@@ -504,7 +504,7 @@ git commit -m "feat: expose real AI development IPC"
 - Consumes: Task 3 的 preload API 和 `listProjects({ status: 'all' })`。
 - Produces: 持久化会话、真实消息、真实运行状态和项目选择交互。
 
-- [ ] **Step 1: 替换渲染进程类型**
+- [x] **Step 1: 替换渲染进程类型**
 
 将模拟类型替换为：
 
@@ -533,7 +533,7 @@ export interface DevelopmentRunView {
 }
 ```
 
-- [ ] **Step 2: 创建唯一 API 模块**
+- [x] **Step 2: 创建唯一 API 模块**
 
 `project-development-api.ts` 只封装 `window.desktopApi`：
 
@@ -548,7 +548,7 @@ export const subscribeDevelopmentEvents = (listener: (event: DevelopmentEventEnv
   window.desktopApi.subscribeDevelopmentEvents(listener);
 ```
 
-- [ ] **Step 3: 替换页面模拟状态**
+- [x] **Step 3: 替换页面模拟状态**
 
 删除 `RUN_STEPS`、`setInterval` 和模拟 AI 回复。页面挂载时并行加载会话和全部项目；创建会话时显示内联项目选择器，没有项目则提供“先去项目管理创建项目”的提示。
 
@@ -564,7 +564,7 @@ const [error, setError] = useState('');
 
 收到匹配 `activeSession.id` 的事件才更新右栏；`assistant-message` 事件后重新调用 `getSession` 取得已落库消息；收到 `process-exited` 后刷新会话列表和当前会话。
 
-- [ ] **Step 4: 调整三栏组件**
+- [x] **Step 4: 调整三栏组件**
 
 - 左栏副标题显示 `projectName · phase`，底部改为“本机 Codex · 工作区权限受限”；
 - 中栏顶部显示项目名和 `需求讨论` / `开发执行`；
@@ -575,13 +575,13 @@ const [error, setError] = useState('');
 - `command-completed` 展开时展示裁剪后的输出；
 - 错误用文字和颜色共同表达。
 
-- [ ] **Step 5: 构建确认类型闭环**
+- [x] **Step 5: 构建确认类型闭环**
 
 Run: `npm run build`
 
 Expected: React、preload、Electron 主进程全部编译成功，无 TypeScript 错误。
 
-- [ ] **Step 6: 提交真实工作台**
+- [x] **Step 6: 提交真实工作台**
 
 ```bash
 git add src/features/project-development src/vite-env.d.ts
@@ -601,7 +601,7 @@ git commit -m "feat: connect project development workspace to Codex"
 - Consumes: Tasks 1-4 的完整闭环。
 - Produces: 可交付的验证证据和使用说明。
 
-- [ ] **Step 1: 更新 README 使用说明**
+- [x] **Step 1: 更新 README 使用说明**
 
 写明：
 
@@ -617,19 +617,19 @@ git commit -m "feat: connect project development workspace to Codex"
 
 将旧设计文档顶部标记为“模拟版历史设计，已由真实模式规格替代”，并链接新规格。
 
-- [ ] **Step 2: 运行全量自动化测试**
+- [x] **Step 2: 运行全量自动化测试**
 
 Run: `npm test`
 
 Expected: 所有 database、service、validation、Codex、development 测试通过，0 failed。
 
-- [ ] **Step 3: 运行独立生产构建**
+- [x] **Step 3: 运行独立生产构建**
 
 Run: `npm run build`
 
 Expected: Vite 与 Electron TypeScript 构建成功。
 
-- [ ] **Step 4: 检查危险参数和模拟残留**
+- [x] **Step 4: 检查危险参数和模拟残留**
 
 Run:
 
@@ -639,13 +639,13 @@ rg -n "danger-full-access|dangerously-bypass|RUN_STEPS|模拟回复|模拟执行
 
 Expected: 无结果；如果测试需要包含危险字符串来断言禁止项，只允许出现在测试断言中，不允许出现在生产文件。
 
-- [ ] **Step 5: 检查 Git 差异**
+- [x] **Step 5: 检查 Git 差异**
 
 Run: `git diff --check && git status --short`
 
 Expected: 无空白错误，仅显示本任务预期文档修改。
 
-- [ ] **Step 6: 提交验证与文档**
+- [x] **Step 6: 提交验证与文档**
 
 ```bash
 git add README.md docs/project-development-workbench-design.md docs/superpowers/plans/2026-08-30-real-project-development.md

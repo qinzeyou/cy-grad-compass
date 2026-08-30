@@ -1,50 +1,101 @@
-import { useEffect, useRef, useState, type ReactElement } from 'react';
+import { useEffect, useMemo, useState, type ReactElement } from 'react';
+import { ProjectManagementPage } from '../project-management/project-management-page';
+import { fetchProjectList } from '../project-statistics/project-statistics-api';
+import type { Project, ProjectStatusFilter } from '../project-statistics/project-statistics-types';
 import { DevelopmentChatPanel } from './development-chat-panel';
 import { DevelopmentRunPanel } from './development-run-panel';
 import { DevelopmentSessionList } from './development-session-list';
-import type { ChatMessage, DevelopmentSession, RunStatus } from './project-development-types';
+import { createSession, getSession, listSessions, sendMessage, startDevelopment, stopDevelopment, subscribeDevelopmentEvents } from './project-development-api';
+import type { DevelopmentEvent, DevelopmentEventEnvelope, DevelopmentRunView, DevelopmentSession, DevelopmentSessionDetail } from './project-development-types';
 import './project-development.css';
 
-const RUN_STEPS = ['分析需求', '编写代码', '运行检查', '整理结果'];
-const now = () => new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
-const message = (role: ChatMessage['role'], content: string): ChatMessage => ({ id: `${Date.now()}-${Math.random()}`, role, content, createdAt: new Date().toISOString() });
-const emptySession = (index: number): DevelopmentSession => ({ id: `${Date.now()}-${index}`, title: `未命名会话 ${index}`, updatedAt: now(), messages: [], run: { status: 'idle', progress: 0, currentAction: '等待你的开发需求', logs: ['模拟执行器已就绪'] } });
+const EMPTY_RUN: DevelopmentRunView = { status: 'idle', startedAt: null, commandCount: 0, changedPaths: [], currentAction: '等待 AI 任务', logs: [] };
+const eventLog = (event: DevelopmentEvent): { label: string; detail?: string } => {
+  if (event.type === 'command-started') return { label: '开始执行命令', detail: event.command };
+  if (event.type === 'command-completed') return { label: event.exitCode === 0 ? '命令执行完成' : '命令执行失败', detail: event.command };
+  if (event.type === 'file-change') return { label: '文件发生变更', detail: event.paths.join('、') || '未提供路径' };
+  if (event.type === 'assistant-message') return { label: '收到 AI 回复' };
+  if (event.type === 'run-error') return { label: '执行错误', detail: event.message };
+  if (event.type === 'turn-started') return { label: 'AI 开始处理' };
+  if (event.type === 'turn-completed') return { label: '本次任务完成' };
+  if (event.type === 'process-exited') return { label: event.stopped ? '进程已停止' : '进程已退出' };
+  if (event.type === 'thread-started') return { label: '已建立 Codex 会话' };
+  return { label: event.text };
+};
 
-// 中文注释：页面容器集中管理会话和单个定时器，避免切换会话时出现串线更新。
-export function ProjectDevelopmentPage(): ReactElement {
-  const [sessions, setSessions] = useState<DevelopmentSession[]>(() => [emptySession(1)]);
-  const [activeId, setActiveId] = useState('');
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const activeSession = sessions.find((session) => session.id === activeId) ?? sessions[0];
+function asError(reason: unknown): string { return reason instanceof Error ? reason.message : String(reason); }
 
-  useEffect(() => { if (!activeId && sessions[0]) setActiveId(sessions[0].id); }, [activeId, sessions]);
-  useEffect(() => () => { if (timerRef.current) clearInterval(timerRef.current); }, []);
+interface ProjectDevelopmentPageProps {
+  initialStatus?: ProjectStatusFilter;
+  onImportTemplate: () => void;
+}
 
-  const updateActive = (update: (session: DevelopmentSession) => DevelopmentSession) => setSessions((current) => current.map((session) => session.id === activeSession?.id ? update(session) : session));
+// 中文注释：页面容器负责把持久化会话和实时事件合并成三个面板所需的读模型。
+export function ProjectDevelopmentPage({ initialStatus = 'all', onImportTemplate }: ProjectDevelopmentPageProps): ReactElement {
+  const [view, setView] = useState<'management' | 'workbench'>('management');
+  const [sessions, setSessions] = useState<DevelopmentSession[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [selectedProjectId, setSelectedProjectId] = useState('');
+  const [activeSession, setActiveSession] = useState<DevelopmentSessionDetail | null>(null);
+  const [runBySession, setRunBySession] = useState<Record<string, DevelopmentRunView>>({});
+  const [error, setError] = useState('');
+  const [creating, setCreating] = useState(false);
+  const activeRun = activeSession ? (runBySession[activeSession.id] ?? EMPTY_RUN) : EMPTY_RUN;
 
-  const createSession = () => { const created = emptySession(sessions.length + 1); setSessions((current) => [created, ...current]); setActiveId(created.id); };
-  const sendMessage = (content: string) => {
-    updateActive((session) => ({ ...session, title: session.messages.length === 0 ? content.slice(0, 22) : session.title, updatedAt: now(), messages: [...session.messages, message('user', content)] }));
-    window.setTimeout(() => updateActive((session) => ({ ...session, updatedAt: now(), messages: [...session.messages, message('assistant', '这是模拟回复：我已理解你的需求。点击“开始开发”后，将演示 Agent 的分析、编写和检查流程。')] })), 700);
+  useEffect(() => {
+    if (view !== 'workbench') return;
+    void Promise.all([listSessions(), fetchProjectList({ status: 'all' })]).then(async ([items, allProjects]) => {
+      setSessions(items); setProjects(allProjects);
+    }).catch((reason: unknown) => setError(asError(reason)));
+  }, [view]);
+
+  useEffect(() => subscribeDevelopmentEvents((envelope: DevelopmentEventEnvelope) => {
+    setRunBySession((current) => {
+      const previous = current[envelope.sessionId] ?? EMPTY_RUN;
+      const event = envelope.event;
+      const next: DevelopmentRunView = { ...previous, logs: [...previous.logs, { id: `${Date.now()}-${previous.logs.length}`, ...eventLog(event) }].slice(-100) };
+      if (event.type === 'turn-started') { next.status = 'running'; next.startedAt = previous.startedAt ?? Date.now(); next.currentAction = 'AI 正在处理需求'; }
+      if (event.type === 'thread-started') next.currentAction = 'Codex 会话已建立';
+      if (event.type === 'command-started') { next.status = 'running'; next.commandCount += 1; next.currentAction = event.command; }
+      if (event.type === 'file-change') next.changedPaths = [...new Set([...next.changedPaths, ...event.paths])];
+      if (event.type === 'assistant-message') next.currentAction = '正在整理 AI 回复';
+      if (event.type === 'run-error') { next.status = 'error'; next.currentAction = event.message; }
+      if (event.type === 'turn-completed') { next.status = 'completed'; next.currentAction = '本次任务完成'; }
+      if (event.type === 'process-exited' && event.stopped) { next.status = 'stopped'; next.currentAction = '用户已停止任务'; }
+      if (event.type === 'process-exited' && !event.stopped && next.status === 'running') { next.status = 'completed'; next.currentAction = '进程已退出'; }
+      return { ...current, [envelope.sessionId]: next };
+    });
+    if (activeSession?.id === envelope.sessionId && ['assistant-message', 'process-exited', 'thread-started'].includes(envelope.event.type)) void getSession(envelope.sessionId).then(setActiveSession).catch(() => undefined);
+  }), [activeSession?.id]);
+
+  const selectSession = (id: string) => { setError(''); void getSession(id).then(setActiveSession).catch((reason: unknown) => setError(asError(reason))); };
+  const selectProject = (projectId: string) => {
+    setSelectedProjectId(projectId);
+    setActiveSession(null);
+    setError('');
+    const firstSession = sessions.find((session) => session.projectId === projectId);
+    if (firstSession) void getSession(firstSession.id).then(setActiveSession).catch((reason: unknown) => setError(asError(reason)));
   };
-  const startRun = () => {
-    if (!activeSession || activeSession.run.status === 'queued' || activeSession.run.status === 'running') return;
-    if (timerRef.current) clearInterval(timerRef.current);
-    let step = -1;
-    updateActive((session) => ({ ...session, run: { status: 'queued', progress: 5, currentAction: '等待 Agent 启动', logs: [...session.run.logs, '已创建模拟开发任务'] } }));
-    timerRef.current = setInterval(() => {
-      step += 1;
-      if (step >= RUN_STEPS.length) {
-        if (timerRef.current) clearInterval(timerRef.current);
-        updateActive((session) => ({ ...session, updatedAt: now(), run: { ...session.run, status: 'completed', progress: 100, currentAction: '模拟开发已完成', logs: [...session.run.logs, '模拟开发已完成'] } }));
-        return;
-      }
-      const progress = 25 + step * 23;
-      updateActive((session) => ({ ...session, updatedAt: now(), run: { ...session.run, status: 'running', progress, currentAction: RUN_STEPS[step], logs: [...session.run.logs, `Agent：${RUN_STEPS[step]}`] } }));
-    }, 900);
+  const handleCreate = () => {
+    if (!selectedProjectId) return;
+    setCreating(true); setError('');
+    void createSession(selectedProjectId).then((created) => { setActiveSession(created); return listSessions(); }).then(setSessions).catch((reason: unknown) => setError(asError(reason))).finally(() => setCreating(false));
   };
-  const stopRun = () => { if (timerRef.current) clearInterval(timerRef.current); timerRef.current = null; updateActive((session) => ({ ...session, run: { ...session.run, status: 'stopped' as RunStatus, currentAction: '已停止本次模拟运行', logs: [...session.run.logs, '用户停止了模拟运行'] } })); };
+  const handleSend = (text: string) => { if (!activeSession) return; setError(''); setRunBySession((current) => ({ ...current, [activeSession.id]: { ...EMPTY_RUN, status: 'running', startedAt: Date.now(), currentAction: '正在启动 Codex', logs: [{ id: `${Date.now()}-start`, label: '正在启动 Codex' }] } })); void sendMessage(activeSession.id, text).catch((reason: unknown) => { setError(asError(reason)); setRunBySession((current) => ({ ...current, [activeSession.id]: { ...(current[activeSession.id] ?? EMPTY_RUN), status: 'error', currentAction: '启动失败' } })); }); };
+  const handleStart = () => { if (!activeSession) return; setError(''); setRunBySession((current) => ({ ...current, [activeSession.id]: { ...EMPTY_RUN, status: 'running', startedAt: Date.now(), currentAction: '正在启动 Codex', logs: [{ id: `${Date.now()}-start`, label: '正在启动 Codex' }] } })); void startDevelopment(activeSession.id).catch((reason: unknown) => { setError(asError(reason)); setRunBySession((current) => ({ ...current, [activeSession.id]: { ...(current[activeSession.id] ?? EMPTY_RUN), status: 'error', currentAction: '启动失败' } })); }); };
+  const handleStop = () => { if (activeSession) void stopDevelopment(activeSession.id).catch((reason: unknown) => setError(asError(reason))); };
+  // 中文注释：项目列表是进入 AI 工作台的唯一入口，保证每个会话都绑定真实项目。
+  const handleDevelop = (project: Project) => {
+    setProjects((current) => current.some((item) => item.id === project.id) ? current.map((item) => item.id === project.id ? project : item) : [...current, project]);
+    setSelectedProjectId(project.id);
+    setActiveSession(null);
+    setError('');
+    setView('workbench');
+  };
+  const canCreate = useMemo(() => projects.length > 0, [projects.length]);
 
-  if (!activeSession) return <div className="development-workbench" />;
-  return <div className="development-workbench"><DevelopmentSessionList sessions={sessions} activeId={activeSession.id} onSelect={(id) => { if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; } setActiveId(id); }} onCreate={createSession} /><DevelopmentChatPanel session={activeSession} onSend={sendMessage} onStart={startRun} /><DevelopmentRunPanel run={activeSession.run} onStop={stopRun} /></div>;
+  const viewSwitch = <div className="development-view-switch" role="group" aria-label="项目开发视图"><button className={view === 'management' ? 'segment-button active' : 'segment-button'} type="button" onClick={() => setView('management')}>项目管理</button><button className={view === 'workbench' ? 'segment-button active' : 'segment-button'} type="button" onClick={() => setView('workbench')} disabled={!selectedProjectId}>AI 开发</button></div>;
+  if (view === 'management') return <>{viewSwitch}<ProjectManagementPage initialStatus={initialStatus} onImportTemplate={onImportTemplate} onDevelop={handleDevelop} /></>;
+  if (!activeSession) return <>{viewSwitch}<div className="development-workbench"><DevelopmentSessionList sessions={sessions.filter((session) => session.projectId === selectedProjectId)} projects={projects} selectedProjectId={selectedProjectId} activeId="" onProjectSelect={selectProject} onSelect={selectSession} onCreate={handleCreate} creating={creating} /><div className="development-empty-state">{!selectedProjectId ? (canCreate ? '请先返回项目管理并选择项目' : '请先创建项目') : '点击左侧 ＋ 创建开发会话'}</div><DevelopmentRunPanel run={EMPTY_RUN} onStop={() => undefined} /></div></>;
+  return <>{viewSwitch}<div className="development-workbench"><DevelopmentSessionList sessions={sessions.filter((session) => session.projectId === selectedProjectId)} projects={projects} selectedProjectId={selectedProjectId} activeId={activeSession.id} onProjectSelect={selectProject} onSelect={selectSession} onCreate={handleCreate} creating={creating} /><DevelopmentChatPanel session={activeSession} runStatus={activeRun.status} error={error} onSend={handleSend} onStart={handleStart} /><DevelopmentRunPanel run={activeRun} onStop={handleStop} /></div></>;
 }

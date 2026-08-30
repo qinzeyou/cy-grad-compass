@@ -12,6 +12,11 @@ import type {
   ProjectUpdateInput,
   Template,
 } from './features/project-management/project-management-types';
+import type {
+  DevelopmentEventEnvelope,
+  DevelopmentSession,
+  DevelopmentSessionDetail,
+} from './features/project-development/project-development-types';
 
 declare global {
   interface Window {
@@ -29,6 +34,13 @@ declare global {
       getTemplate: () => Promise<Template | null>;
       importTemplate: () => Promise<Template | null>;
       replaceTemplate: () => Promise<Template | null>;
+      listDevelopmentSessions: () => Promise<DevelopmentSession[]>;
+      getDevelopmentSession: (id: string) => Promise<DevelopmentSessionDetail>;
+      createDevelopmentSession: (projectId: string) => Promise<DevelopmentSessionDetail>;
+      sendDevelopmentMessage: (sessionId: string, message: string) => Promise<void>;
+      startDevelopment: (sessionId: string) => Promise<void>;
+      stopDevelopment: (sessionId: string) => Promise<void>;
+      subscribeDevelopmentEvents: (listener: (envelope: DevelopmentEventEnvelope) => void) => () => void;
     };
   }
 }

@@ -1,24 +1,19 @@
-export type ChatRole = 'user' | 'assistant';
-export type RunStatus = 'idle' | 'queued' | 'running' | 'completed' | 'stopped';
+export type DevelopmentPhase = 'discussion' | 'development';
+export type DevelopmentRunStatus = 'idle' | 'running' | 'completed' | 'error' | 'stopped';
 
-export type ChatMessage = {
-  id: string;
-  role: ChatRole;
-  content: string;
-  createdAt: string;
-};
-
-export type DevelopmentRun = {
-  status: RunStatus;
-  progress: number;
-  currentAction: string;
-  logs: string[];
-};
-
-export type DevelopmentSession = {
-  id: string;
-  title: string;
-  updatedAt: string;
-  messages: ChatMessage[];
-  run: DevelopmentRun;
-};
+export interface DevelopmentMessage { id: string; sessionId: string; role: 'user' | 'assistant'; content: string; createdAt: string; }
+export interface DevelopmentSession { id: string; projectId: string; projectName: string; title: string; codexThreadId: string | null; phase: DevelopmentPhase; createdAt: string; updatedAt: string; }
+export interface DevelopmentSessionDetail extends DevelopmentSession { messages: DevelopmentMessage[]; }
+export type DevelopmentEvent =
+  | { type: 'thread-started'; threadId: string }
+  | { type: 'turn-started' }
+  | { type: 'assistant-message'; text: string }
+  | { type: 'command-started'; id: string; command: string }
+  | { type: 'command-completed'; id: string; command: string; output: string; exitCode: number | null }
+  | { type: 'file-change'; paths: string[] }
+  | { type: 'turn-completed' }
+  | { type: 'run-error'; message: string }
+  | { type: 'log'; text: string }
+  | { type: 'process-exited'; exitCode: number; stopped: boolean };
+export interface DevelopmentEventEnvelope { sessionId: string; event: DevelopmentEvent; }
+export interface DevelopmentRunView { status: DevelopmentRunStatus; startedAt: number | null; commandCount: number; changedPaths: string[]; currentAction: string; logs: Array<{ id: string; label: string; detail?: string }>; }

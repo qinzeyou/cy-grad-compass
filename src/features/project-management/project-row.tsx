@@ -13,10 +13,11 @@ interface ProjectRowProps {
   onRename: (project: Project, newName: string) => Promise<void>;
   onArchive: (project: Project) => void;
   onOpenPath: (project: Project) => void;
+  onDevelop: (project: Project) => void;
 }
 
-// 中文注释：单条项目展示行，包含名称（可重命名）、状态切换、路径、创建/更新时间与操作按钮。
-export function ProjectRow({ project, busy, onStatusChange, onRename, onArchive, onOpenPath }: ProjectRowProps): ReactElement {
+// 中文注释：单条项目展示行，包含名称、状态、目录管理和进入 AI 开发工作台的入口。
+export function ProjectRow({ project, busy, onStatusChange, onRename, onArchive, onOpenPath, onDevelop }: ProjectRowProps): ReactElement {
   const [editing, setEditing] = useState(false);
   const [draftName, setDraftName] = useState(project.name);
   const [renameError, setRenameError] = useState<string | null>(null);
@@ -95,6 +96,7 @@ export function ProjectRow({ project, busy, onStatusChange, onRename, onArchive,
         <time dateTime={project.updatedAt} title="更新时间">更 {formatDate(project.updatedAt)}</time>
       </div>
       <div className="row-actions">
+        <button className="text-button develop-action" type="button" onClick={() => onDevelop(project)} disabled={busy}>进入开发</button>
         <button className="text-button" type="button" onClick={startEditing} disabled={busy}>重命名</button>
         <button className="text-button" type="button" onClick={() => onOpenPath(project)} disabled={busy}>打开目录</button>
         {project.status !== 'archived' && (

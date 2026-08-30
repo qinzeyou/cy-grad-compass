@@ -10,6 +10,11 @@ import type {
   ProjectUpdateResult,
   Template,
 } from './shared/project-types.js';
+import type {
+  DevelopmentEventEnvelope,
+  DevelopmentSession,
+  DevelopmentSessionDetail,
+} from './development/development-types.js';
 
 // 中文注释：Electron 会把主进程抛出的错误包装成
 // "Error invoking remote method '<通道>': Error: <消息>"，这里还原成只含中文消息的
@@ -50,4 +55,17 @@ contextBridge.exposeInMainWorld('desktopApi', {
   getTemplate: (): Promise<Template | null> => invoke('template:get'),
   importTemplate: (): Promise<Template | null> => invoke('template:import'),
   replaceTemplate: (): Promise<Template | null> => invoke('template:replace'),
+
+  // 开发会话
+  listDevelopmentSessions: (): Promise<DevelopmentSession[]> => invoke('development:list-sessions'),
+  getDevelopmentSession: (id: string): Promise<DevelopmentSessionDetail> => invoke('development:get-session', id),
+  createDevelopmentSession: (projectId: string): Promise<DevelopmentSessionDetail> => invoke('development:create-session', projectId),
+  sendDevelopmentMessage: (sessionId: string, message: string): Promise<void> => invoke('development:send-message', sessionId, message),
+  startDevelopment: (sessionId: string): Promise<void> => invoke('development:start', sessionId),
+  stopDevelopment: (sessionId: string): Promise<void> => invoke('development:stop', sessionId),
+  subscribeDevelopmentEvents: (listener: (envelope: DevelopmentEventEnvelope) => void): (() => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, envelope: DevelopmentEventEnvelope) => listener(envelope);
+    ipcRenderer.on('development:event', handler);
+    return () => ipcRenderer.off('development:event', handler);
+  },
 });

@@ -23,6 +23,7 @@ interface ProjectListProps {
   onRenameProject: (project: Project, newName: string) => Promise<void>;
   onArchiveProject: (project: Project) => void;
   onOpenPath: (project: Project) => void;
+  onDevelop: (project: Project) => void;
   onImportTemplate: () => void;
   onCreateProject: () => void;
 }
@@ -42,6 +43,7 @@ export function ProjectList({
   onRenameProject,
   onArchiveProject,
   onOpenPath,
+  onDevelop,
   onImportTemplate,
   onCreateProject,
 }: ProjectListProps): ReactElement {
@@ -123,6 +125,7 @@ export function ProjectList({
                 onRename={onRenameProject}
                 onArchive={onArchiveProject}
                 onOpenPath={onOpenPath}
+                onDevelop={onDevelop}
               />
             ))}
           </ul>

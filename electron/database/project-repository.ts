@@ -94,10 +94,10 @@ export class ProjectRepository {
       .prepare(
         `SELECT id, name, path, status, template_id, created_at, updated_at
          FROM projects
-         WHERE (?1 = '' OR name LIKE ?2 ESCAPE '\\') AND (?3 = 'all' OR status = ?3)
+         WHERE (? = '' OR name LIKE ? ESCAPE '\\') AND (? = 'all' OR status = ?)
          ORDER BY updated_at DESC, id DESC`,
       )
-      .all(keyword, `%${escapedKeyword}%`, status) as unknown as ProjectRow[];
+      .all(keyword, `%${escapedKeyword}%`, status, status) as unknown as ProjectRow[];
     return rows.map(mapProjectRow);
   }
 

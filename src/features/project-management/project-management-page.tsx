@@ -10,13 +10,15 @@ interface ProjectManagementPageProps {
   initialStatus?: ProjectStatusFilter;
   // 中文注释：空状态里的“导入代码模板”入口，由应用外壳切换到模板管理页。
   onImportTemplate: () => void;
+  // 中文注释：从项目列表选择项目后，交给项目开发页打开对应 AI 工作台。
+  onDevelop: (project: Project) => void;
 }
 
 type LoadState = 'loading' | 'ready' | 'error';
 
 // 中文注释：项目管理页。负责模板面板、新建项目表单与项目列表的组合与数据刷新，
 // 不直接处理文件系统，所有文件操作都走 preload 白名单 API。
-export function ProjectManagementPage({ initialStatus = 'all', onImportTemplate }: ProjectManagementPageProps): ReactElement {
+export function ProjectManagementPage({ initialStatus = 'all', onImportTemplate, onDevelop }: ProjectManagementPageProps): ReactElement {
   const [keyword, setKeyword] = useState('');
   const [status, setStatus] = useState<ProjectStatusFilter>(initialStatus);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -150,6 +152,7 @@ export function ProjectManagementPage({ initialStatus = 'all', onImportTemplate 
               onRenameProject={handleRenameProject}
               onArchiveProject={handleArchiveProject}
               onOpenPath={handleOpenPath}
+              onDevelop={onDevelop}
               onImportTemplate={onImportTemplate}
               onCreateProject={handleCreateProjectShortcut}
             />
