@@ -81,7 +81,7 @@ export class DevelopmentRepository {
     const messages = this.database.prepare(
       `SELECT id, session_id, role, content, created_at
        FROM development_messages WHERE session_id = ?
-       ORDER BY created_at ASC, id ASC`,
+       ORDER BY created_at ASC, rowid ASC`,
     ).all(id) as unknown as MessageRow[];
     return { ...mapSession(row), messages: messages.map(mapMessage) };
   }

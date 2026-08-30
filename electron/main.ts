@@ -8,6 +8,10 @@ import { registerProjectIpcHandlers } from './ipc/project-handlers.js';
 import { registerTemplateIpcHandlers } from './ipc/template-handlers.js';
 import { ProjectService } from './services/project-service.js';
 import { TemplateService } from './services/template-service.js';
+import { CodexController } from './development/codex-controller.js';
+import { DevelopmentRepository } from './development/development-repository.js';
+import { DevelopmentService } from './development/development-service.js';
+import { registerDevelopmentIpcHandlers, sendDevelopmentEvent } from './development/development-handlers.js';
 
 // 中文注释：主进程编译为 CommonJS（Electron 44 的 ESM 无法从 'electron' 模块获取命名导出），
 // CommonJS 环境直接使用 __dirname 定位资源目录。
@@ -15,6 +19,9 @@ const currentDirectory = __dirname;
 
 // 中文注释：主进程持有数据库连接，窗口与 IPC 处理器共享同一数据源，退出前统一关闭。
 let database: AppDatabase | null = null;
+let developmentService: DevelopmentService | null = null;
+let mainWindow: BrowserWindow | null = null;
+let shutdownStarted = false;
 
 // 中文注释：创建桌面窗口，开发环境加载 Vite，生产环境加载构建后的静态页面。
 function createWindow(): void {
@@ -30,6 +37,8 @@ function createWindow(): void {
       nodeIntegration: false,
     },
   });
+  mainWindow = window;
+  window.on('closed', () => { if (mainWindow === window) mainWindow = null; });
 
   if (process.env.VITE_DEV_SERVER_URL) {
     void window.loadURL(process.env.VITE_DEV_SERVER_URL);
@@ -48,9 +57,18 @@ app.whenReady().then(() => {
   const templateRepository = new TemplateRepository(database);
   const projectService = new ProjectService(projectRepository, templateRepository);
   const templateService = new TemplateService(templateRepository, templatesDir);
+  const developmentRepository = new DevelopmentRepository(database);
+  const codexController = new CodexController();
+  developmentService = new DevelopmentService(
+    projectRepository,
+    developmentRepository,
+    codexController,
+    (sessionId, event) => sendDevelopmentEvent(mainWindow?.webContents ?? null, sessionId, event),
+  );
 
   registerProjectIpcHandlers(projectService);
   registerTemplateIpcHandlers(templateService);
+  registerDevelopmentIpcHandlers(developmentService);
 
   // 中文注释：仅开放最小系统能力，模板与项目操作都走各自专用通道。
   ipcMain.handle('system:get-app-version', () => app.getVersion());
@@ -66,9 +84,15 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
 
-app.on('will-quit', () => {
-  if (database !== null) {
-    closeDatabase(database);
-    database = null;
-  }
+app.on('before-quit', (event) => {
+  if (shutdownStarted || developmentService === null) return;
+  event.preventDefault();
+  shutdownStarted = true;
+  void developmentService.dispose().finally(() => {
+    if (database !== null) {
+      closeDatabase(database);
+      database = null;
+    }
+    app.quit();
+  });
 });
