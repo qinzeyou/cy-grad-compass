@@ -10,6 +10,8 @@ export type AppDatabase = DatabaseSync;
 export function openDatabase(dbPath: string): AppDatabase {
   mkdirSync(dirname(dbPath), { recursive: true });
   const database = new DatabaseSync(dbPath);
+  // 中文注释：显式开启外键约束，避免开发会话残留指向不存在的项目。
+  database.exec('PRAGMA foreign_keys = ON;');
   // 中文注释：WAL 模式提升并发读性能且崩溃恢复更安全，适合桌面单用户读写场景。
   database.exec('PRAGMA journal_mode = WAL;');
   runMigrations(database);
