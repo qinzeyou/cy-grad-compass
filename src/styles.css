@@ -45,3 +45,102 @@ h3 { margin-top: 8px; font-size: 18px; }
 .steps-list li { display: flex; gap: 14px; padding: 16px 0; border-bottom: 1px solid #e9e7e0; }
 .steps-list li:last-child { border-bottom: 0; }.steps-list li > span { color: #8b8d84; font: 11px 'DM Mono', monospace; }.steps-list div { display: grid; gap: 4px; }.steps-list strong { font-size: 13px; }.steps-list small { color: #8a8b83; font-size: 11px; }
 @media (max-width: 1050px) { .main-content { padding: 30px 28px 48px; }.sidebar { width: 210px; } h2 { font-size: 27px; } }
+
+/* ===== 项目统计 ===== */
+.metric-card.clickable { cursor: pointer; text-align: left; border: 0; transition: transform .12s ease, box-shadow .12s ease; }
+.metric-card.clickable:hover { transform: translateY(-2px); box-shadow: 0 8px 18px rgba(32, 33, 30, .14); }
+.metric-card.clickable:focus-visible { outline: 2px solid #a7d34c; outline-offset: 2px; }
+.loading-line { margin-top: 18px; padding: 16px; color: #8a8b83; font-size: 13px; text-align: center; }
+.error-panel { display: grid; place-items: center; min-height: 280px; margin-top: 18px; padding: 32px; text-align: center; background: #fbfaf6; border: 1px solid #e5e3dc; }
+.error-panel strong { font-size: 16px; }.error-panel p { margin-top: 8px; color: #8a8b83; font-size: 13px; }
+.notice-banner { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 14px; padding: 11px 14px; background: #20211e; color: #f5f4ee; font-size: 13px; }
+.notice-close { border: 0; background: transparent; color: #989a91; font-size: 16px; line-height: 1; cursor: pointer; }
+.notice-close:hover { color: #f5f4ee; }
+.empty-actions { display: flex; gap: 10px; }
+.secondary-button.ghost { margin-top: 20px; background: transparent; border: 1px solid #20211e; color: #20211e; }
+.text-button:disabled { color: #b4b5ac; cursor: default; }
+.placeholder-panel { margin-top: 18px; }
+
+/* ===== 最近项目列表 ===== */
+.recent-list { display: grid; gap: 0; margin: 18px 0 0; padding: 0; list-style: none; }
+.recent-row { display: grid; grid-template-columns: 1fr auto auto; gap: 14px; align-items: center; padding: 13px 0; border-bottom: 1px solid #e9e7e0; }
+.recent-row:last-child { border-bottom: 0; }
+.recent-main { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.recent-main strong { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.recent-meta { display: grid; gap: 3px; justify-items: end; min-width: 0; }
+.recent-meta time { color: #8a8b83; font: 11px 'DM Mono', monospace; }
+.recent-path { display: inline-block; max-width: 240px; color: #8a8b83; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.status-badge { padding: 2px 8px; font-size: 11px; border-radius: 2px; white-space: nowrap; }
+.status-badge.in-progress { background: #f1d768; color: #20211e; }
+.status-badge.completed { background: #badb72; color: #20211e; }
+.status-badge.archived { background: #e4e3dc; color: #4c4d48; }
+
+/* ===== 项目管理页 ===== */
+.list-panel { margin-top: 18px; min-height: 420px; }
+.filter-bar { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding-bottom: 16px; border-bottom: 1px solid #e9e7e0; }
+.search-input { flex: 1 1 220px; min-width: 180px; padding: 10px 12px; border: 1px solid #d8d6cf; background: #fff; font: inherit; font-size: 13px; }
+.search-input:focus-visible { outline: 2px solid #a7d34c; outline-offset: 0; }
+.status-filter { display: flex; gap: 4px; background: #ecebe4; padding: 3px; }
+.segment-button { padding: 7px 13px; border: 0; background: transparent; color: #5e5f58; font-size: 12px; cursor: pointer; }
+.segment-button.active { background: #20211e; color: #f5f4ee; }
+.list-summary { margin: 14px 0 4px; color: #8a8b83; font: 11px 'DM Mono', monospace; }
+.project-table { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; }
+.project-row { display: grid; grid-template-columns: minmax(150px, 1.3fr) 110px minmax(160px, 1.6fr) 96px auto; gap: 14px; align-items: center; padding: 13px 0; border-bottom: 1px solid #e9e7e0; }
+.project-row:last-child { border-bottom: 0; }
+.project-name-cell { display: grid; gap: 3px; min-width: 0; }
+.project-name-cell strong { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.project-id { color: #a6a79f; font: 10px 'DM Mono', monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.status-select { padding: 6px 8px; border: 1px solid #d8d6cf; background: #fff; font: inherit; font-size: 12px; }
+.status-select:focus-visible { outline: 2px solid #a7d34c; }
+.project-date-cell { color: #8a8b83; font: 11px 'DM Mono', monospace; white-space: nowrap; }
+@media (max-width: 1050px) { .project-row { grid-template-columns: minmax(130px, 1fr) 100px auto; }.project-path-cell, .project-date-cell { display: none; } }
+
+/* ===== 项目管理页（模板面板 / 新建表单） ===== */
+.management-grid { display: grid; grid-template-columns: 1fr 340px; gap: 14px; align-items: start; margin-top: 18px; }
+.management-main { display: grid; gap: 14px; min-width: 0; }
+.management-side { position: sticky; top: 18px; }
+@media (max-width: 1050px) { .management-grid { grid-template-columns: 1fr; }.management-side { position: static; } }
+
+/* 模板面板 */
+.template-panel { min-height: 0; }
+.template-status { padding: 3px 9px; font: 500 11px 'DM Mono', monospace; border-radius: 2px; white-space: nowrap; }
+.template-status.loaded { background: #badb72; color: #20211e; }
+.template-status.missing { background: #f1d768; color: #20211e; }
+.template-meta { display: grid; gap: 0; margin: 18px 0 0; padding: 0; }
+.template-meta > div { display: grid; grid-template-columns: 68px 1fr; gap: 10px; padding: 9px 0; border-bottom: 1px solid #e9e7e0; font-size: 12px; }
+.template-meta > div:last-child { border-bottom: 0; }
+.template-meta dt { color: #8b8d84; font: 11px 'DM Mono', monospace; padding-top: 1px; }
+.template-meta dd { margin: 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.template-meta dd.mono { font-family: 'DM Mono', monospace; font-size: 11px; color: #5e5f58; }
+.template-actions { display: flex; gap: 10px; margin-top: 18px; }
+.template-actions .primary-button { flex: 1; }
+.template-actions .secondary-button { margin-top: 0; }
+.template-empty { padding: 26px 10px 6px; }
+
+/* 内联提示条（面板内错误/提示） */
+.inline-notice { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 14px; padding: 9px 12px; background: #f1d768; color: #20211e; font-size: 12px; }
+.error-panel.compact { min-height: 0; margin-top: 18px; }
+
+/* 新建项目表单 */
+.form-panel { min-height: 0; }
+.project-form { display: grid; gap: 14px; margin-top: 18px; }
+.form-field { display: grid; gap: 6px; }
+.form-field label { color: #5e5f58; font: 500 11px 'DM Mono', monospace; letter-spacing: .04em; }
+.form-input { padding: 10px 12px; border: 1px solid #d8d6cf; background: #fff; font: inherit; font-size: 13px; }
+.form-input:focus-visible { outline: 2px solid #a7d34c; outline-offset: 0; }
+.form-input:disabled { background: #f1f0ea; color: #8a8b83; }
+.dir-picker { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+.dir-input { min-width: 0; }
+.compact-button { margin-top: 0; padding: 10px 14px; }
+.form-error { color: #a33b1e; font-size: 12px; }
+.form-actions { display: flex; align-items: center; gap: 14px; }
+.form-hint { color: #8a8b83; font-size: 11px; }
+.primary-button:disabled, .secondary-button:disabled { opacity: .45; cursor: default; }
+
+/* 项目行操作与重命名 */
+.row-actions { display: flex; gap: 12px; white-space: nowrap; }
+.text-button.danger { color: #a33b1e; }
+.rename-field { display: grid; gap: 4px; }
+.rename-input { width: 100%; min-width: 120px; padding: 6px 8px; border: 1px solid #a7d34c; background: #fff; font: inherit; font-size: 13px; }
+.rename-input:focus-visible { outline: 2px solid #a7d34c; outline-offset: 0; }
+.rename-error { color: #a33b1e; font-size: 11px; }

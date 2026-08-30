@@ -22,6 +22,9 @@
 npm install
 npm run dev
 npm run build
+npm run test   # 构建后运行数据库层自动化测试
+npm run seed   # 写入演示项目数据（便于验证统计与列表）
+npm run smoke  # 冒烟验证：启动窗口检查 preload/IPC/统计是否正常
 npm start
 ```
 
