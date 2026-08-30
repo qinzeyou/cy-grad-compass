@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type ReactElement } from 'react';
+import { ProjectManagementPage } from '../project-management/project-management-page';
 import { fetchProjectList } from '../project-statistics/project-statistics-api';
-import type { Project } from '../project-statistics/project-statistics-types';
+import type { Project, ProjectStatusFilter } from '../project-statistics/project-statistics-types';
 import { DevelopmentChatPanel } from './development-chat-panel';
 import { DevelopmentRunPanel } from './development-run-panel';
 import { DevelopmentSessionList } from './development-session-list';
@@ -24,8 +25,14 @@ const eventLog = (event: DevelopmentEvent): { label: string; detail?: string } =
 
 function asError(reason: unknown): string { return reason instanceof Error ? reason.message : String(reason); }
 
+interface ProjectDevelopmentPageProps {
+  initialStatus?: ProjectStatusFilter;
+  onImportTemplate: () => void;
+}
+
 // 中文注释：页面容器负责把持久化会话和实时事件合并成三个面板所需的读模型。
-export function ProjectDevelopmentPage(): ReactElement {
+export function ProjectDevelopmentPage({ initialStatus = 'all', onImportTemplate }: ProjectDevelopmentPageProps): ReactElement {
+  const [view, setView] = useState<'management' | 'workbench'>('management');
   const [sessions, setSessions] = useState<DevelopmentSession[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState('');
@@ -36,10 +43,11 @@ export function ProjectDevelopmentPage(): ReactElement {
   const activeRun = activeSession ? (runBySession[activeSession.id] ?? EMPTY_RUN) : EMPTY_RUN;
 
   useEffect(() => {
+    if (view !== 'workbench') return;
     void Promise.all([listSessions(), fetchProjectList({ status: 'all' })]).then(async ([items, allProjects]) => {
       setSessions(items); setProjects(allProjects);
     }).catch((reason: unknown) => setError(asError(reason)));
-  }, []);
+  }, [view]);
 
   useEffect(() => subscribeDevelopmentEvents((envelope: DevelopmentEventEnvelope) => {
     setRunBySession((current) => {
@@ -76,7 +84,18 @@ export function ProjectDevelopmentPage(): ReactElement {
   const handleSend = (text: string) => { if (!activeSession) return; setError(''); setRunBySession((current) => ({ ...current, [activeSession.id]: { ...EMPTY_RUN, status: 'running', startedAt: Date.now(), currentAction: '正在启动 Codex', logs: [{ id: `${Date.now()}-start`, label: '正在启动 Codex' }] } })); void sendMessage(activeSession.id, text).catch((reason: unknown) => { setError(asError(reason)); setRunBySession((current) => ({ ...current, [activeSession.id]: { ...(current[activeSession.id] ?? EMPTY_RUN), status: 'error', currentAction: '启动失败' } })); }); };
   const handleStart = () => { if (!activeSession) return; setError(''); setRunBySession((current) => ({ ...current, [activeSession.id]: { ...EMPTY_RUN, status: 'running', startedAt: Date.now(), currentAction: '正在启动 Codex', logs: [{ id: `${Date.now()}-start`, label: '正在启动 Codex' }] } })); void startDevelopment(activeSession.id).catch((reason: unknown) => { setError(asError(reason)); setRunBySession((current) => ({ ...current, [activeSession.id]: { ...(current[activeSession.id] ?? EMPTY_RUN), status: 'error', currentAction: '启动失败' } })); }); };
   const handleStop = () => { if (activeSession) void stopDevelopment(activeSession.id).catch((reason: unknown) => setError(asError(reason))); };
+  // 中文注释：项目列表是进入 AI 工作台的唯一入口，保证每个会话都绑定真实项目。
+  const handleDevelop = (project: Project) => {
+    setProjects((current) => current.some((item) => item.id === project.id) ? current.map((item) => item.id === project.id ? project : item) : [...current, project]);
+    setSelectedProjectId(project.id);
+    setActiveSession(null);
+    setError('');
+    setView('workbench');
+  };
   const canCreate = useMemo(() => projects.length > 0, [projects.length]);
-  if (!activeSession) return <div className="development-workbench"><DevelopmentSessionList sessions={sessions.filter((session) => session.projectId === selectedProjectId)} projects={projects} selectedProjectId={selectedProjectId} activeId="" onProjectSelect={selectProject} onSelect={selectSession} onCreate={handleCreate} creating={creating} /><div className="development-empty-state">{!selectedProjectId ? (canCreate ? '请先选择一个项目' : '请先在项目管理中创建项目') : '点击左侧 ＋ 创建开发会话'}</div><DevelopmentRunPanel run={EMPTY_RUN} onStop={() => undefined} /></div>;
-  return <div className="development-workbench"><DevelopmentSessionList sessions={sessions.filter((session) => session.projectId === selectedProjectId)} projects={projects} selectedProjectId={selectedProjectId} activeId={activeSession.id} onProjectSelect={selectProject} onSelect={selectSession} onCreate={handleCreate} creating={creating} /><DevelopmentChatPanel session={activeSession} runStatus={activeRun.status} error={error} onSend={handleSend} onStart={handleStart} /><DevelopmentRunPanel run={activeRun} onStop={handleStop} /></div>;
+
+  const viewSwitch = <div className="development-view-switch" role="group" aria-label="项目开发视图"><button className={view === 'management' ? 'segment-button active' : 'segment-button'} type="button" onClick={() => setView('management')}>项目管理</button><button className={view === 'workbench' ? 'segment-button active' : 'segment-button'} type="button" onClick={() => setView('workbench')} disabled={!selectedProjectId}>AI 开发</button></div>;
+  if (view === 'management') return <>{viewSwitch}<ProjectManagementPage initialStatus={initialStatus} onImportTemplate={onImportTemplate} onDevelop={handleDevelop} /></>;
+  if (!activeSession) return <>{viewSwitch}<div className="development-workbench"><DevelopmentSessionList sessions={sessions.filter((session) => session.projectId === selectedProjectId)} projects={projects} selectedProjectId={selectedProjectId} activeId="" onProjectSelect={selectProject} onSelect={selectSession} onCreate={handleCreate} creating={creating} /><div className="development-empty-state">{!selectedProjectId ? (canCreate ? '请先返回项目管理并选择项目' : '请先创建项目') : '点击左侧 ＋ 创建开发会话'}</div><DevelopmentRunPanel run={EMPTY_RUN} onStop={() => undefined} /></div></>;
+  return <>{viewSwitch}<div className="development-workbench"><DevelopmentSessionList sessions={sessions.filter((session) => session.projectId === selectedProjectId)} projects={projects} selectedProjectId={selectedProjectId} activeId={activeSession.id} onProjectSelect={selectProject} onSelect={selectSession} onCreate={handleCreate} creating={creating} /><DevelopmentChatPanel session={activeSession} runStatus={activeRun.status} error={error} onSend={handleSend} onStart={handleStart} /><DevelopmentRunPanel run={activeRun} onStop={handleStop} /></div></>;
 }

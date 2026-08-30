@@ -139,6 +139,7 @@ h3 { margin-top: 8px; font-size: 18px; }
 
 /* 项目行操作与重命名 */
 .row-actions { display: flex; gap: 12px; white-space: nowrap; }
+.develop-action { font-weight: 600; }
 .text-button.danger { color: #a33b1e; }
 .rename-field { display: grid; gap: 4px; }
 .rename-input { width: 100%; min-width: 120px; padding: 6px 8px; border: 1px solid #a7d34c; background: #fff; font: inherit; font-size: 13px; }

@@ -1,23 +1,20 @@
 import { useEffect, useState, type ReactElement } from 'react';
-import { ProjectManagementPage } from './features/project-management/project-management-page';
 import { TemplatePanel } from './features/project-management/template-panel';
 import { ProjectStatisticsPage } from './features/project-statistics/project-statistics-page';
 import { ProjectDevelopmentPage } from './features/project-development/project-development-page';
 import type { EmptyAction } from './features/project-statistics/recent-project-list';
 import type { ProjectStatusFilter } from './features/project-statistics/project-statistics-types';
 
-type NavKey = 'dashboard' | 'projects' | 'templates' | 'development';
+type NavKey = 'dashboard' | 'templates' | 'development';
 
 const NAV_ITEMS: Array<{ key: NavKey; label: string }> = [
   { key: 'dashboard', label: '仪表盘' },
-  { key: 'projects', label: '项目管理' },
   { key: 'templates', label: '模板管理' },
   { key: 'development', label: '项目开发' },
 ];
 
 const PAGE_TITLES: Record<NavKey, string> = {
   dashboard: '仪表盘',
-  projects: '项目管理',
   templates: '模板管理',
   development: '项目开发',
 };
@@ -26,21 +23,27 @@ const PAGE_TITLES: Record<NavKey, string> = {
 export function App(): ReactElement {
   const [activeNav, setActiveNav] = useState<NavKey>('dashboard');
   const [projectsStatus, setProjectsStatus] = useState<ProjectStatusFilter>('all');
+  const [developmentEntry, setDevelopmentEntry] = useState(0);
   const [appVersion, setAppVersion] = useState('读取中');
 
   useEffect(() => {
     void window.desktopApi.getAppVersion().then(setAppVersion);
   }, []);
 
-  // 中文注释：统计卡片点击后跳转到项目管理页，并自动带入对应状态筛选。
-  const navigateToProjects = (status: ProjectStatusFilter) => {
+  // 中文注释：所有项目管理入口统一进入项目开发页的管理视图，并带入状态筛选。
+  const navigateToDevelopment = (status: ProjectStatusFilter = 'all') => {
     setProjectsStatus(status);
-    setActiveNav('projects');
+    setDevelopmentEntry((current) => current + 1);
+    setActiveNav('development');
   };
 
-  // 中文注释：空状态入口现在是真实操作：导入模板跳转模板管理页，新建项目跳转项目管理页。
+  // 中文注释：导入模板保留独立入口，新建项目进入项目开发内的管理视图。
   const handleEmptyAction = (action: EmptyAction) => {
-    setActiveNav(action === 'import-template' ? 'templates' : 'projects');
+    if (action === 'import-template') {
+      setActiveNav('templates');
+      return;
+    }
+    navigateToDevelopment();
   };
 
   return (
@@ -56,7 +59,7 @@ export function App(): ReactElement {
             <button
               className={activeNav === item.key ? 'nav-item active' : 'nav-item'}
               key={item.key}
-              onClick={() => setActiveNav(item.key)}
+              onClick={() => item.key === 'development' ? navigateToDevelopment() : setActiveNav(item.key)}
               type="button"
             >
               <span className="nav-dot" />
@@ -76,25 +79,23 @@ export function App(): ReactElement {
             <span className="eyebrow">WORKSPACE / 2026</span>
             <h1>{PAGE_TITLES[activeNav]}</h1>
           </div>
-          <button className="primary-button" type="button" onClick={() => setActiveNav('projects')}>
+          <button className="primary-button" type="button" onClick={() => navigateToDevelopment()}>
             ＋ 新建项目
           </button>
         </header>
 
         {activeNav === 'dashboard' && (
-          <ProjectStatisticsPage onNavigateToProjects={navigateToProjects} onEmptyAction={handleEmptyAction} />
+          <ProjectStatisticsPage onNavigateToProjects={navigateToDevelopment} onEmptyAction={handleEmptyAction} />
         )}
 
-        {activeNav === 'projects' && (
-          <ProjectManagementPage
-            key={projectsStatus}
+        {activeNav === 'templates' && <TemplatePanel />}
+        {activeNav === 'development' && (
+          <ProjectDevelopmentPage
+            key={`${projectsStatus}-${developmentEntry}`}
             initialStatus={projectsStatus}
             onImportTemplate={() => setActiveNav('templates')}
           />
         )}
-
-        {activeNav === 'templates' && <TemplatePanel />}
-        {activeNav === 'development' && <ProjectDevelopmentPage />}
       </main>
     </div>
   );

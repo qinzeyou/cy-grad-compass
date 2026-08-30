@@ -9,7 +9,7 @@ interface ProjectStatisticsCardProps {
   onClick?: () => void;
 }
 
-// 中文注释：单张统计指标卡片。传入 onClick 时渲染为按钮，点击跳转到项目管理页对应筛选。
+// 中文注释：单张统计指标卡片。传入 onClick 时渲染为按钮，点击进入项目开发内的管理筛选。
 export function ProjectStatisticsCard({ label, value, tone, onClick }: ProjectStatisticsCardProps): ReactElement {
   const content = (
     <>
