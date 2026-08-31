@@ -44,6 +44,7 @@ declare global {
       sendDevelopmentMessage: (sessionId: string, message: string) => Promise<void>;
       startDevelopment: (sessionId: string) => Promise<void>;
       stopDevelopment: (sessionId: string) => Promise<void>;
+      deleteDevelopmentSession: (sessionId: string) => Promise<void>;
       subscribeDevelopmentEvents: (listener: (envelope: DevelopmentEventEnvelope) => void) => () => void;
     };
   }

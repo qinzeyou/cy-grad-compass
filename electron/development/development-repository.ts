@@ -116,4 +116,17 @@ export class DevelopmentRepository {
     this.database.prepare('UPDATE development_sessions SET phase = ?, updated_at = ? WHERE id = ?')
       .run(phase, updatedAt, id);
   }
+
+  // 中文注释：删除会话时先清理消息，避免留下无主消息记录。
+  deleteSession(id: string): void {
+    this.database.exec('BEGIN');
+    try {
+      this.database.prepare('DELETE FROM development_messages WHERE session_id = ?').run(id);
+      this.database.prepare('DELETE FROM development_sessions WHERE id = ?').run(id);
+      this.database.exec('COMMIT');
+    } catch (error) {
+      this.database.exec('ROLLBACK');
+      throw error;
+    }
+  }
 }

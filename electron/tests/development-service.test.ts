@@ -77,3 +77,14 @@ test('项目路径不存在时不能创建开发会话', () => {
     assert.throws(() => context.service.createSession(projectId), /项目目录不存在/);
   } finally { context.cleanup(); }
 });
+
+test('删除开发会话及其消息', async () => {
+  const context = fixture();
+  try {
+    const session = context.service.createSession('project-1');
+    context.repository.addMessage({ id: 'message-1', sessionId: session.id, role: 'user', content: '待删除消息', createdAt: new Date().toISOString() });
+    context.service.deleteSession(session.id);
+    assert.equal(context.repository.getSession(session.id), null);
+    assert.equal(context.repository.listSessions().some((item) => item.id === session.id), false);
+  } finally { context.cleanup(); }
+});

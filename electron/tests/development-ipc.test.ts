@@ -12,11 +12,12 @@ test('开发 IPC 注册会话请求通道并校验字符串参数', () => {
     sendMessage: (id: string, message: string) => Promise.resolve(`${id}:${message}`),
     startDevelopment: (id: string) => Promise.resolve(id),
     stop: (id: string) => Promise.resolve(id),
+    deleteSession: (id: string) => id,
   } as never;
   registerDevelopmentIpcHandlers(service, { handle: (channel, handler) => registered.set(channel, handler) });
   assert.deepEqual([...registered.keys()], [
     'development:list-sessions', 'development:get-session', 'development:create-session',
-    'development:send-message', 'development:start', 'development:stop',
+    'development:send-message', 'development:start', 'development:stop', 'development:delete-session',
   ]);
   assert.throws(() => registered.get('development:get-session')?.({}, '  '), /缺少开发会话编号/);
 });

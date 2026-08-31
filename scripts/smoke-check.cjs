@@ -72,7 +72,9 @@ app.whenReady().then(async () => {
         hasAntdLayout: document.querySelector('.ant-layout') !== null,
         hasWindowBar: document.querySelector('.window-bar') !== null,
         hasWorkbench: document.querySelector('.development-workbench') !== null,
+        developmentContentFlush: getComputedStyle(query('.development-content')).padding === '0px',
         hasNativeMenus: ['File', 'Edit', 'View'].some((label) => document.body.innerText.includes(label)),
+        removedDevelopmentLabels: ['本机 Codex', 'AI 对话', 'AI 运行情况', '讨论阶段只读'].every((label) => !document.body.innerText.includes(label)),
         windowBarVisible: getComputedStyle(document.querySelector('.window-bar')).display !== 'none',
         windowBrandVisible: document.querySelector('.window-bar-brand') !== null,
         sidebarBackground: getComputedStyle(document.querySelector('.app-sidebar')).backgroundColor,
@@ -106,6 +108,8 @@ app.whenReady().then(async () => {
     if (!result.hasAntdLayout) fail('页面未使用 Ant Design Layout');
     if (!result.hasWindowBar) fail('缺少自定义窗口栏');
     if (!result.hasWorkbench) fail('项目开发页未展示三栏工作台');
+    if (!result.developmentContentFlush) fail('项目开发页仍有外层间距');
+    if (!result.removedDevelopmentLabels) fail('项目开发页仍显示不必要提示');
     if (result.hasNativeMenus) fail('页面仍展示原生系统菜单文本');
     if (!result.windowBarVisible || !result.windowBrandVisible) fail('切换项目开发后窗口栏或系统标识不可见');
     if (result.sidebarBackground !== 'rgb(255, 255, 255)') fail(`侧边栏背景不是白色：${result.sidebarBackground}`);

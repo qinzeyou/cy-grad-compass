@@ -67,6 +67,7 @@ contextBridge.exposeInMainWorld('desktopApi', {
   sendDevelopmentMessage: (sessionId: string, message: string): Promise<void> => invoke('development:send-message', sessionId, message),
   startDevelopment: (sessionId: string): Promise<void> => invoke('development:start', sessionId),
   stopDevelopment: (sessionId: string): Promise<void> => invoke('development:stop', sessionId),
+  deleteDevelopmentSession: (sessionId: string): Promise<void> => invoke('development:delete-session', sessionId),
   subscribeDevelopmentEvents: (listener: (envelope: DevelopmentEventEnvelope) => void): (() => void) => {
     const handler = (_event: Electron.IpcRendererEvent, envelope: DevelopmentEventEnvelope) => listener(envelope);
     ipcRenderer.on('development:event', handler);

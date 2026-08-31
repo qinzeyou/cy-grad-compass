@@ -52,6 +52,12 @@ export class DevelopmentService {
     return session;
   }
 
+  deleteSession(id: string): void {
+    this.getSession(id);
+    if (this.activeSessionId === id) throw new Error('运行中的会话不能删除');
+    this.developmentRepository.deleteSession(id);
+  }
+
   createSession(projectId: string): DevelopmentSessionDetail {
     const project = this.projectRepository.findById(projectId);
     if (project === null) throw new Error('项目不存在');

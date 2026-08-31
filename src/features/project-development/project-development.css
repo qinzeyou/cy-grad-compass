@@ -1,12 +1,15 @@
 .development-page { height:100%; min-height:0; }
-.development-workbench { display:grid; grid-template-columns:250px minmax(420px,1fr) 300px; height:100%; min-height:0; overflow:hidden; background:#FFF; border:1px solid #D9E0EA; border-radius:8px; }
+.development-content { padding:0!important; overflow:hidden; }
+.development-workbench { display:grid; grid-template-columns:250px minmax(420px,1fr) 300px; height:100%; min-height:0; overflow:hidden; background:#FFF; }
 .development-sessions,.development-run { background:#F8FAFC; }
 .development-sessions { display:flex; flex-direction:column; border-right:1px solid #D9E0EA; }
 .development-sidebar-head,.development-chat-head,.run-head { display:flex; align-items:flex-start; justify-content:space-between; padding:20px 18px; }
 .development-sidebar-head h4,.development-chat-head h4,.run-head h4 { margin:6px 0 0!important; }
 .project-select-wrap { display:grid; gap:7px; margin:0 12px 16px; padding:12px; background:#EEF3FA; border-radius:6px; }
 .session-list { display:grid; gap:4px; padding:0 10px; overflow:auto; }
-.session-item { display:flex!important; align-items:center; justify-content:flex-start; gap:10px; width:100%; height:auto!important; padding:11px 10px!important; text-align:left; }
+.session-row { display:flex; align-items:center; gap:2px; }
+.session-item { display:flex!important; align-items:center; justify-content:flex-start; gap:10px; flex:1; min-width:0; height:auto!important; padding:11px 10px!important; text-align:left; }
+.session-delete { flex:0 0 auto; }
 .session-item.active { background:#E8F0FF!important; }
 .session-status,.log-dot { width:7px; height:7px; flex:0 0 auto; border-radius:50%; background:#9AA8B8; }
 .session-copy { display:grid; gap:3px; min-width:0; }.session-copy strong { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }.session-copy small { color:#7F8DA0; font:10px 'DM Mono',monospace; }
