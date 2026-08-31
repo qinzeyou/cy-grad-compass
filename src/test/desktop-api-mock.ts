@@ -4,6 +4,7 @@ import { vi } from 'vitest';
 import type { DevelopmentSessionDetail } from '../features/project-development/project-development-types';
 import type { Project, ProjectStatistics } from '../features/project-statistics/project-statistics-types';
 import type { Template } from '../features/project-management/project-management-types';
+import type { AiConfigDto, AiConnectionResult, AiSaveConfigInput } from '../features/settings/settings-types';
 
 function makeProject(): Project {
   return {
@@ -65,19 +66,19 @@ export function installDesktopApiMock(overrides: Partial<Window['desktopApi']> =
     stopDevelopment: vi.fn(async () => undefined),
     deleteDevelopmentSession: vi.fn(async () => undefined),
     subscribeDevelopmentEvents: vi.fn(() => () => undefined),
-    getAiConfig: vi.fn(async () => ({
+    getAiConfig: vi.fn(async (): Promise<AiConfigDto> => ({
       provider: 'deepseek',
       model: 'deepseek-chat',
       apiBaseUrl: 'https://api.deepseek.com',
       hasApiKey: false,
     })),
-    saveAiConfig: vi.fn(async () => ({
+    saveAiConfig: vi.fn(async (_input: AiSaveConfigInput): Promise<AiConfigDto> => ({
       provider: 'deepseek',
       model: 'deepseek-chat',
       apiBaseUrl: 'https://api.deepseek.com',
       hasApiKey: true,
     })),
-    testAiConnection: vi.fn(async () => ({ ok: true, provider: 'deepseek', model: 'deepseek-chat', elapsedMs: 120 })),
+    testAiConnection: vi.fn(async (): Promise<AiConnectionResult> => ({ ok: true, provider: 'deepseek', model: 'deepseek-chat', elapsedMs: 120 })),
     ...overrides,
   };
   window.desktopApi = api;
