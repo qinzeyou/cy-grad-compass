@@ -77,6 +77,9 @@ app.whenReady().then(async () => {
         sidebarFullHeight: document.querySelector('.app-sidebar').getBoundingClientRect().height >= window.innerHeight - 1,
         brandAlignedWithSidebar: Math.abs(document.querySelector('.window-bar-brand').getBoundingClientRect().width - document.querySelector('.app-sidebar').getBoundingClientRect().width) < 1,
         hasDevelopmentTopAction: [...document.querySelectorAll('.page-heading button')].some((button) => button.textContent?.includes('新建项目')),
+        brandDividerRemoved: getComputedStyle(document.querySelector('.window-bar-brand')).borderRightWidth === '0px',
+        logoRound: getComputedStyle(document.querySelector('.window-logo')).borderRadius === '50%',
+        brandHasNoSubtitle: document.querySelectorAll('.window-bar-brand .ant-typography').length === 1,
       };
     })()`);
 
@@ -102,6 +105,9 @@ app.whenReady().then(async () => {
     if (!result.sidebarFullHeight) fail('侧边栏高度未占满窗口');
     if (!result.brandAlignedWithSidebar) fail('系统标识与侧边菜单没有处于同一列');
     if (!result.hasDevelopmentTopAction) fail('项目开发页顶部操作不可见');
+    if (!result.brandDividerRemoved) fail('Logo 与系统名称下方仍存在分隔线');
+    if (!result.logoRound) fail('Logo 未使用圆形包裹');
+    if (!result.brandHasNoSubtitle) fail('系统名称下方仍存在副标题');
 
     closeDatabase(database);
   } catch (error) {
