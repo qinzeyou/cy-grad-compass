@@ -72,9 +72,11 @@ app.whenReady().then(async () => {
         hasWorkbench: document.querySelector('.development-workbench') !== null,
         hasNativeMenus: ['File', 'Edit', 'View'].some((label) => document.body.innerText.includes(label)),
         windowBarVisible: getComputedStyle(document.querySelector('.window-bar')).display !== 'none',
-        windowBrandVisible: document.querySelector('.window-brand') !== null,
+        windowBrandVisible: document.querySelector('.window-bar-brand') !== null,
         sidebarBackground: getComputedStyle(document.querySelector('.app-sidebar')).backgroundColor,
         sidebarFullHeight: document.querySelector('.app-sidebar').getBoundingClientRect().height >= window.innerHeight - 1,
+        brandAlignedWithSidebar: Math.abs(document.querySelector('.window-bar-brand').getBoundingClientRect().width - document.querySelector('.app-sidebar').getBoundingClientRect().width) < 1,
+        hasDevelopmentTopAction: [...document.querySelectorAll('.page-heading button')].some((button) => button.textContent?.includes('新建项目')),
       };
     })()`);
 
@@ -98,6 +100,8 @@ app.whenReady().then(async () => {
     if (!result.windowBarVisible || !result.windowBrandVisible) fail('切换项目开发后窗口栏或系统标识不可见');
     if (result.sidebarBackground !== 'rgb(255, 255, 255)') fail(`侧边栏背景不是白色：${result.sidebarBackground}`);
     if (!result.sidebarFullHeight) fail('侧边栏高度未占满窗口');
+    if (!result.brandAlignedWithSidebar) fail('系统标识与侧边菜单没有处于同一列');
+    if (!result.hasDevelopmentTopAction) fail('项目开发页顶部操作不可见');
 
     closeDatabase(database);
   } catch (error) {
