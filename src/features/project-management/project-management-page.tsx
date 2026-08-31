@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef, useState, type ReactElement } from 'react';
-import { Alert, Button, Modal, Typography } from 'antd';
+import { useCallback, useEffect, useState, type ReactElement } from 'react';
+import { Button, Modal, Typography } from 'antd';
 import { changeProjectStatus, fetchProjectList } from '../project-statistics/project-statistics-api';
 import type { Project, ProjectStatus, ProjectStatusFilter } from '../project-statistics/project-statistics-types';
 import { openProjectPath, updateProject } from './project-management-api';
@@ -9,8 +9,6 @@ import { TemplatePanel } from './template-panel';
 
 interface ProjectManagementPageProps {
   initialStatus?: ProjectStatusFilter;
-  // 中文注释：空状态里的“导入代码模板”入口，由应用外壳切换到模板管理页。
-  onImportTemplate: () => void;
   // 中文注释：从项目列表选择项目后，交给项目开发页打开对应 AI 工作台。
   onDevelop: (project: Project) => void;
 }
@@ -19,14 +17,15 @@ type LoadState = 'loading' | 'ready' | 'error';
 
 // 中文注释：项目管理页。负责模板面板、新建项目表单与项目列表的组合与数据刷新，
 // 不直接处理文件系统，所有文件操作都走 preload 白名单 API。
-export function ProjectManagementPage({ initialStatus = 'all', onImportTemplate, onDevelop }: ProjectManagementPageProps): ReactElement {
+export function ProjectManagementPage({ initialStatus = 'all', onDevelop }: ProjectManagementPageProps): ReactElement {
   const [keyword, setKeyword] = useState('');
   const [status, setStatus] = useState<ProjectStatusFilter>(initialStatus);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [busyProjectId, setBusyProjectId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const formAnchorRef = useRef<HTMLDivElement>(null);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [templateOpen, setTemplateOpen] = useState(false);
 
   // 中文注释：按当前筛选条件重新查询项目列表；错误重试时直接调用，不经过防抖。
   const reload = useCallback(() => {
@@ -55,6 +54,7 @@ export function ProjectManagementPage({ initialStatus = 'all', onImportTemplate,
   // 中文注释：生成成功后立即刷新列表，让新项目马上出现在列表与统计中。
   const handleCreated = useCallback((project: Project) => {
     setNotice(`项目「${project.name}」已生成`);
+    setCreateOpen(false);
     reload();
   }, [reload]);
 
@@ -102,10 +102,6 @@ export function ProjectManagementPage({ initialStatus = 'all', onImportTemplate,
     }
   }, []);
 
-  const handleCreateProjectShortcut = useCallback(() => {
-    formAnchorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, []);
-
   return (
     <>
       {notice !== null && (
@@ -115,9 +111,18 @@ export function ProjectManagementPage({ initialStatus = 'all', onImportTemplate,
         </div>
       )}
 
+      <div className="management-toolbar">
+        <div>
+          <Typography.Text className="eyebrow">PROJECT CONTROL</Typography.Text>
+          <Typography.Text type="secondary">管理项目状态与开发入口</Typography.Text>
+        </div>
+        <div className="management-actions">
+          <Button type="primary" onClick={() => setCreateOpen(true)}>新建项目</Button>
+          <Button onClick={() => setTemplateOpen(true)}>模板管理</Button>
+        </div>
+      </div>
       <div className="management-grid">
-        <div ref={formAnchorRef} className="management-main">
-          <ProjectForm onCreated={handleCreated} />
+        <div className="management-main">
           <section className="panel list-panel">
             <div className="panel-heading">
               <div>
@@ -140,15 +145,18 @@ export function ProjectManagementPage({ initialStatus = 'all', onImportTemplate,
               onArchiveProject={handleArchiveProject}
               onOpenPath={handleOpenPath}
               onDevelop={onDevelop}
-              onImportTemplate={onImportTemplate}
-              onCreateProject={handleCreateProjectShortcut}
+              onImportTemplate={() => setTemplateOpen(true)}
+              onCreateProject={() => setCreateOpen(true)}
             />
           </section>
         </div>
-        <div className="management-side">
-          <TemplatePanel />
-        </div>
       </div>
+      <Modal open={createOpen} title="新建项目" footer={null} destroyOnClose onCancel={() => setCreateOpen(false)}>
+        <ProjectForm embedded onCreated={handleCreated} />
+      </Modal>
+      <Modal open={templateOpen} title="模板管理" footer={null} width={560} destroyOnClose onCancel={() => setTemplateOpen(false)}>
+        <TemplatePanel />
+      </Modal>
     </>
   );
 }

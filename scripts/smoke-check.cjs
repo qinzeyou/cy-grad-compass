@@ -58,7 +58,9 @@ app.whenReady().then(async () => {
       const navItems = [...document.querySelectorAll('.ant-menu-item')];
       const developmentNav = navItems.find((item) => item.textContent?.includes('项目开发'));
       developmentNav?.click();
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      const query = (selector) => document.querySelector(selector);
+      const rect = (selector) => query(selector)?.getBoundingClientRect() ?? { height: 0, top: -1, width: 0 };
       return {
         hasApi: typeof api === 'object' && api !== null,
         stats,
@@ -74,14 +76,16 @@ app.whenReady().then(async () => {
         windowBarVisible: getComputedStyle(document.querySelector('.window-bar')).display !== 'none',
         windowBrandVisible: document.querySelector('.window-bar-brand') !== null,
         sidebarBackground: getComputedStyle(document.querySelector('.app-sidebar')).backgroundColor,
-        sidebarFullHeight: document.querySelector('.app-sidebar').getBoundingClientRect().height >= window.innerHeight - 48 - 1,
-        sidebarMenuDividerRemoved: getComputedStyle(document.querySelector('.app-sidebar .ant-menu')).borderInlineEndWidth === '0px',
-        brandAlignedWithSidebar: Math.abs(document.querySelector('.window-bar-brand').getBoundingClientRect().width - document.querySelector('.app-sidebar').getBoundingClientRect().width) < 1,
-        hasDevelopmentTopAction: [...document.querySelectorAll('.page-heading button')].some((button) => button.textContent?.includes('新建项目')),
-        mainLayoutLocked: getComputedStyle(document.querySelector('.main-layout')).overflow === 'hidden',
-        pageHeadingVisible: document.querySelector('.page-heading').getBoundingClientRect().top >= 0,
-        brandDividerPresent: getComputedStyle(document.querySelector('.window-bar-brand')).borderRightWidth !== '0px',
-        logoRound: getComputedStyle(document.querySelector('.window-logo')).borderRadius === '50%',
+        sidebarFullHeight: rect('.app-sidebar').height >= window.innerHeight - 48 - 1,
+        sidebarMenuDividerRemoved: getComputedStyle(query('.app-sidebar .ant-menu')).borderInlineEndWidth === '0px',
+        brandAlignedWithSidebar: Math.abs(rect('.window-bar-brand').width - rect('.app-sidebar').width) < 1,
+        hasDevelopmentProjectSelector: query('.project-select-wrap') !== null,
+        mainLayoutLocked: getComputedStyle(query('.main-layout')).overflow === 'hidden',
+        contentVisible: rect('.app-content').height > 100,
+        contentHeight: rect('.app-content').height,
+        brandBottomBorderRemoved: getComputedStyle(query('.window-bar-brand')).borderBottomWidth === '0px',
+        brandDividerPresent: getComputedStyle(query('.window-bar-brand')).borderRightWidth !== '0px',
+        logoRound: getComputedStyle(query('.window-logo')).borderRadius === '50%',
         brandHasNoSubtitle: document.querySelectorAll('.window-bar-brand .ant-typography').length === 1,
       };
     })()`);
@@ -107,8 +111,10 @@ app.whenReady().then(async () => {
     if (result.sidebarBackground !== 'rgb(255, 255, 255)') fail(`侧边栏背景不是白色：${result.sidebarBackground}`);
     if (!result.sidebarFullHeight) fail('侧边栏高度未占满窗口');
     if (!result.brandAlignedWithSidebar) fail('系统标识与侧边菜单没有处于同一列');
-    if (!result.hasDevelopmentTopAction) fail('项目开发页顶部操作不可见');
-    if (!result.mainLayoutLocked || !result.pageHeadingVisible) fail('主布局未锁定，顶栏可能被项目开发内容挤出');
+    if (!result.hasDevelopmentProjectSelector) fail('项目开发页项目选择器不可见');
+    if (!result.mainLayoutLocked) fail('主布局未锁定，顶栏可能被项目开发内容挤出');
+    if (!result.contentVisible) fail('页面内容区域高度异常，内容不可见');
+    if (!result.brandBottomBorderRemoved) fail('Logo 区域底部仍存在分隔线');
     if (!result.brandDividerPresent) fail('Logo 区域右侧分隔线未显示');
     if (!result.sidebarMenuDividerRemoved) fail('侧边菜单仍显示 AntD 右侧分隔线');
     if (!result.logoRound) fail('Logo 未使用圆形包裹');
