@@ -71,6 +71,10 @@ app.whenReady().then(async () => {
         hasWindowBar: document.querySelector('.window-bar') !== null,
         hasWorkbench: document.querySelector('.development-workbench') !== null,
         hasNativeMenus: ['File', 'Edit', 'View'].some((label) => document.body.innerText.includes(label)),
+        windowBarVisible: getComputedStyle(document.querySelector('.window-bar')).display !== 'none',
+        windowBrandVisible: document.querySelector('.window-brand') !== null,
+        sidebarBackground: getComputedStyle(document.querySelector('.app-sidebar')).backgroundColor,
+        sidebarFullHeight: document.querySelector('.app-sidebar').getBoundingClientRect().height >= window.innerHeight - 1,
       };
     })()`);
 
@@ -91,6 +95,9 @@ app.whenReady().then(async () => {
     if (!result.hasWindowBar) fail('缺少自定义窗口栏');
     if (!result.hasWorkbench) fail('项目开发页未展示三栏工作台');
     if (result.hasNativeMenus) fail('页面仍展示原生系统菜单文本');
+    if (!result.windowBarVisible || !result.windowBrandVisible) fail('切换项目开发后窗口栏或系统标识不可见');
+    if (result.sidebarBackground !== 'rgb(255, 255, 255)') fail(`侧边栏背景不是白色：${result.sidebarBackground}`);
+    if (!result.sidebarFullHeight) fail('侧边栏高度未占满窗口');
 
     closeDatabase(database);
   } catch (error) {
