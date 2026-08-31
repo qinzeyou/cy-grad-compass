@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, shell } from 'electron';
+import { app, BrowserWindow, ipcMain, Menu, shell } from 'electron';
 import { join } from 'node:path';
 import { closeDatabase, openDatabase, type AppDatabase } from './database/connection.js';
 import { getDatabaseFilePath, getTemplatesDirectory } from './database/paths.js';
@@ -30,6 +30,9 @@ function createWindow(): void {
     height: 820,
     minWidth: 960,
     minHeight: 640,
+    frame: false,
+    backgroundColor: '#F5F7FA',
+    show: false,
     webPreferences: {
       // 中文注释：preload 编译为 CommonJS 产物，保证沙箱渲染进程中可以正常加载。
       preload: join(currentDirectory, 'preload.js'),
@@ -38,6 +41,7 @@ function createWindow(): void {
     },
   });
   mainWindow = window;
+  window.once('ready-to-show', () => window.show());
   window.on('closed', () => { if (mainWindow === window) mainWindow = null; });
 
   if (process.env.VITE_DEV_SERVER_URL) {
@@ -48,6 +52,8 @@ function createWindow(): void {
 }
 
 app.whenReady().then(() => {
+  // 中文注释：无边框窗口使用自定义窗口栏，关闭 Electron 默认 File/Edit/View 菜单。
+  Menu.setApplicationMenu(null);
   // 中文注释：数据库在应用就绪后打开，userData 路径此时才可用。
   database = openDatabase(getDatabaseFilePath());
   const templatesDir = getTemplatesDirectory();
@@ -73,6 +79,10 @@ app.whenReady().then(() => {
   // 中文注释：仅开放最小系统能力，模板与项目操作都走各自专用通道。
   ipcMain.handle('system:get-app-version', () => app.getVersion());
   ipcMain.handle('system:open-path', (_event, path: string) => shell.openPath(path));
+  ipcMain.handle('window:minimize', () => mainWindow?.minimize());
+  ipcMain.handle('window:toggle-maximize', () => { if (mainWindow?.isMaximized()) mainWindow.unmaximize(); else mainWindow?.maximize(); return mainWindow?.isMaximized() ?? false; });
+  ipcMain.handle('window:close', () => mainWindow?.close());
+  ipcMain.handle('window:is-maximized', () => mainWindow?.isMaximized() ?? false);
 
   createWindow();
   app.on('activate', () => {

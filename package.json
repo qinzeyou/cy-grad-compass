@@ -13,19 +13,22 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@ant-design/icons": "^5.6.1",
+    "@ant-design/icons-svg": "^4.5.0",
     "@vitejs/plugin-react": "latest",
+    "antd": "^5.27.6",
     "electron": "latest",
     "react": "latest",
     "react-dom": "latest",
     "vite": "latest"
   },
   "devDependencies": {
+    "@types/node": "latest",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
     "concurrently": "latest",
     "cross-env": "latest",
     "typescript": "latest",
-    "wait-on": "latest",
-    "@types/react": "latest",
-    "@types/react-dom": "latest",
-    "@types/node": "latest"
+    "wait-on": "latest"
   }
 }

@@ -1,4 +1,5 @@
 import type { ReactElement } from 'react';
+import { Button, Empty, Tag, Typography } from 'antd';
 import { PROJECT_STATUS_LABELS, type RecentProject } from './project-statistics-types';
 
 export type EmptyAction = 'import-template' | 'create-project';
@@ -13,19 +14,12 @@ interface RecentProjectListProps {
 export function RecentProjectList({ projects, onEmptyAction, onOpenPath }: RecentProjectListProps): ReactElement {
   if (projects.length === 0) {
     return (
-      <div className="empty-state">
-        <div className="empty-icon">＋</div>
-        <strong>还没有毕业项目</strong>
-        <p>导入模板后，创建你的第一个项目。</p>
+      <Empty description="还没有毕业项目">
+        <Typography.Text type="secondary">导入模板后，创建你的第一个项目。</Typography.Text>
         <div className="empty-actions">
-          <button className="secondary-button" type="button" onClick={() => onEmptyAction('import-template')}>
-            导入代码模板
-          </button>
-          <button className="secondary-button ghost" type="button" onClick={() => onEmptyAction('create-project')}>
-            新建项目
-          </button>
+          <Button onClick={() => onEmptyAction('import-template')}>导入代码模板</Button><Button type="primary" onClick={() => onEmptyAction('create-project')}>新建项目</Button>
         </div>
-      </div>
+      </Empty>
     );
   }
 
@@ -35,15 +29,13 @@ export function RecentProjectList({ projects, onEmptyAction, onOpenPath }: Recen
         <li className="recent-row" key={project.id}>
           <div className="recent-main">
             <strong>{project.name}</strong>
-            <span className={`status-badge ${project.status}`}>{PROJECT_STATUS_LABELS[project.status]}</span>
+            <Tag color="blue">{PROJECT_STATUS_LABELS[project.status]}</Tag>
           </div>
           <div className="recent-meta">
             <span className="recent-path" title={project.path}>{project.path}</span>
             <time dateTime={project.createdAt}>{formatDate(project.createdAt)}</time>
           </div>
-          <button className="text-button" type="button" onClick={() => onOpenPath(project)}>
-            打开目录
-          </button>
+          <Button type="link" onClick={() => onOpenPath(project)}>打开目录</Button>
         </li>
       ))}
     </ul>

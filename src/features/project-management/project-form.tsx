@@ -1,106 +1,15 @@
-import { useRef, useState, type FormEvent, type ReactElement } from 'react';
+import { useState, type ReactElement } from 'react';
+import { Button, Form, Input, Typography } from 'antd';
+import { FolderOpenOutlined } from '@ant-design/icons';
 import { createProject, selectDirectory } from './project-management-api';
 import type { Project } from '../project-statistics/project-statistics-types';
 
-interface ProjectFormProps {
-  // 中文注释：生成成功后回调，父组件据此刷新列表。
-  onCreated: (project: Project) => void;
-}
+interface ProjectFormProps { onCreated: (project: Project) => void; }
 
-// 中文注释：收集项目名称与目标目录的表单。目录由主进程弹窗选择，
-// 表单只保存用户选择结果，不直接访问文件系统。
+// 中文注释：项目表单只负责收集名称和目标目录，文件系统访问统一通过 preload API 完成。
 export function ProjectForm({ onCreated }: ProjectFormProps): ReactElement {
-  const [name, setName] = useState('');
-  const [targetDirectory, setTargetDirectory] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const nameInputRef = useRef<HTMLInputElement>(null);
-
-  const handlePickDirectory = async () => {
-    setError(null);
-    const selected = await selectDirectory();
-    if (selected !== null) {
-      setTargetDirectory(selected);
-    }
-  };
-
-  // 中文注释：先做本地必填校验，再交给主进程做完整校验（名称规则、目录可写、重复目录等）。
-  const handleSubmit = async (event: FormEvent) => {
-    event.preventDefault();
-    if (name.trim() === '') {
-      setError('请输入项目名称');
-      nameInputRef.current?.focus();
-      return;
-    }
-    if (targetDirectory === '') {
-      setError('请先选择目标目录');
-      return;
-    }
-    setBusy(true);
-    setError(null);
-    try {
-      const project = await createProject({ name, targetDirectory });
-      setName('');
-      setTargetDirectory('');
-      onCreated(project);
-    } catch (createError) {
-      setError(createError instanceof Error ? createError.message : '项目生成失败，请重试');
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <section className="panel form-panel">
-      <div className="panel-heading">
-        <div>
-          <span className="eyebrow">NEW PROJECT</span>
-          <h3>新建项目</h3>
-        </div>
-      </div>
-      <form className="project-form" onSubmit={(event) => void handleSubmit(event)}>
-        <div className="form-field">
-          <label htmlFor="project-name">项目名称</label>
-          <input
-            id="project-name"
-            ref={nameInputRef}
-            className="form-input"
-            type="text"
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-            placeholder="例如：论文答辩系统"
-            maxLength={80}
-            disabled={busy}
-            aria-describedby={error !== null ? 'project-form-error' : undefined}
-          />
-        </div>
-        <div className="form-field">
-          <label htmlFor="project-target">目标目录</label>
-          <div className="dir-picker">
-            <input
-              id="project-target"
-              className="form-input dir-input"
-              type="text"
-              value={targetDirectory}
-              readOnly
-              placeholder="点击右侧按钮选择存放项目的目录"
-              disabled={busy}
-            />
-            <button className="secondary-button compact-button" type="button" onClick={() => void handlePickDirectory()} disabled={busy}>
-              选择目录
-            </button>
-          </div>
-        </div>
-        {error !== null && (
-          <p className="form-error" id="project-form-error" role="alert">{error}</p>
-        )}
-        <div className="form-actions">
-          <button className="primary-button" type="submit" disabled={busy}>
-            {busy ? '正在生成…' : '生成项目'}
-          </button>
-          <span className="form-hint">只复制目录并登记记录，不安装依赖、不初始化 Git。</span>
-        </div>
-      </form>
-    </section>
-  );
+  const [form] = Form.useForm(); const [busy, setBusy] = useState(false); const [error, setError] = useState('');
+  const submit = async (values: { name: string; targetDirectory: string }) => { setBusy(true); setError(''); try { onCreated(await createProject(values)); form.resetFields(); } catch (reason) { setError(reason instanceof Error ? reason.message : '项目生成失败，请重试'); } finally { setBusy(false); } };
+  const pick = async () => { const directory = await selectDirectory(); if (directory) form.setFieldValue('targetDirectory', directory); };
+  return <section className="panel form-panel"><div className="panel-heading"><div><Typography.Text className="eyebrow">NEW PROJECT</Typography.Text><Typography.Title level={4}>新建项目</Typography.Title></div></div><Form form={form} layout="vertical" className="project-form" onFinish={(values) => void submit(values)}><Form.Item label="项目名称" name="name" rules={[{ required: true, message: '请输入项目名称' }]}><Input maxLength={80} placeholder="例如：论文答辩系统" disabled={busy} /></Form.Item><Form.Item label="目标目录" name="targetDirectory" rules={[{ required: true, message: '请选择目标目录' }]}><Input readOnly placeholder="点击右侧按钮选择存放项目的目录" disabled={busy} addonAfter={<Button type="text" icon={<FolderOpenOutlined />} onClick={() => void pick()} disabled={busy}>选择</Button>} /></Form.Item>{error && <Typography.Text type="danger">{error}</Typography.Text>}<Button type="primary" htmlType="submit" loading={busy}>生成项目</Button></Form></section>;
 }

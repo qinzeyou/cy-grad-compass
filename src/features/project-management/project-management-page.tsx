@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ReactElement } from 'react';
+import { Alert, Button, Modal, Typography } from 'antd';
 import { changeProjectStatus, fetchProjectList } from '../project-statistics/project-statistics-api';
 import type { Project, ProjectStatus, ProjectStatusFilter } from '../project-statistics/project-statistics-types';
 import { openProjectPath, updateProject } from './project-management-api';
@@ -85,21 +86,7 @@ export function ProjectManagementPage({ initialStatus = 'all', onImportTemplate,
 
   // 中文注释：归档是破坏性操作，先确认再执行。
   const handleArchiveProject = useCallback((project: Project) => {
-    if (!window.confirm(`确定归档项目「${project.name}」吗？归档后可随时改回其他状态。`)) {
-      return;
-    }
-    setNotice(null);
-    setBusyProjectId(project.id);
-    changeProjectStatus(project.id, 'archived')
-      .then(({ project: updated }) => {
-        setProjects((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
-      })
-      .catch(() => {
-        setNotice('归档失败，请稍后重试');
-      })
-      .finally(() => {
-        setBusyProjectId(null);
-      });
+    Modal.confirm({ title: '归档项目', content: `确定归档项目「${project.name}」吗？归档后可随时改回其他状态。`, okText: '归档', cancelText: '取消', onOk: () => { setNotice(null); setBusyProjectId(project.id); return changeProjectStatus(project.id, 'archived').then(({ project: updated }) => setProjects((prev) => prev.map((item) => (item.id === updated.id ? updated : item)))).catch(() => setNotice('归档失败，请稍后重试')).finally(() => setBusyProjectId(null)); } });
   }, []);
 
   // 中文注释：按记录 id 打开目录；主进程确认记录存在，路径失效时返回系统错误文本。
@@ -124,7 +111,7 @@ export function ProjectManagementPage({ initialStatus = 'all', onImportTemplate,
       {notice !== null && (
         <div className="notice-banner" role="status">
           <span>{notice}</span>
-          <button className="notice-close" type="button" onClick={() => setNotice(null)} aria-label="关闭提示">×</button>
+          <Button type="text" onClick={() => setNotice(null)} aria-label="关闭提示">×</Button>
         </div>
       )}
 

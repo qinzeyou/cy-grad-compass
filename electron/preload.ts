@@ -36,6 +36,10 @@ contextBridge.exposeInMainWorld('desktopApi', {
   // 系统能力
   getAppVersion: (): Promise<string> => invoke('system:get-app-version'),
   openPath: (path: string): Promise<string> => invoke('system:open-path', path),
+  minimizeWindow: (): Promise<void> => invoke('window:minimize'),
+  toggleMaximizeWindow: (): Promise<boolean> => invoke('window:toggle-maximize'),
+  closeWindow: (): Promise<void> => invoke('window:close'),
+  isMaximized: (): Promise<boolean> => invoke('window:is-maximized'),
 
   // 项目统计
   getProjectStatistics: (): Promise<ProjectStatistics> => invoke('project:get-statistics'),

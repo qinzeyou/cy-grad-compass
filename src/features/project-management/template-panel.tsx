@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, type ReactElement } from 'react';
+import { Button, Empty, Modal, Spin, Tag, Typography } from 'antd';
 import { fetchTemplate, importTemplate, replaceTemplate } from './project-management-api';
 import type { Template } from './project-management-types';
 
@@ -45,9 +46,7 @@ export function TemplatePanel(): ReactElement {
 
   // 中文注释：替换会覆盖当前模板，先确认再执行；已生成项目记录不受影响。
   const handleReplace = useCallback(async () => {
-    if (!window.confirm('替换模板将覆盖当前模板库副本，已生成的项目记录不受影响。是否继续？')) {
-      return;
-    }
+    if (!await new Promise<boolean>((resolve) => Modal.confirm({ title: '替换模板', content: '替换模板将覆盖当前模板库副本，已生成的项目记录不受影响。是否继续？', okText: '继续', cancelText: '取消', onOk: () => resolve(true), onCancel: () => resolve(false) }))) return;
     setBusy(true);
     setNotice(null);
     try {
@@ -77,7 +76,7 @@ export function TemplatePanel(): ReactElement {
       {notice !== null && (
         <div className="inline-notice" role="alert">
           <span>{notice}</span>
-          <button className="notice-close" type="button" onClick={() => setNotice(null)} aria-label="关闭提示">×</button>
+          <Button type="text" onClick={() => setNotice(null)} aria-label="关闭提示">×</Button>
         </div>
       )}
 
@@ -85,7 +84,7 @@ export function TemplatePanel(): ReactElement {
         <div className="error-panel compact">
           <strong>模板读取失败</strong>
           <p>无法读取本地数据库，请稍后重试。</p>
-          <button className="secondary-button" type="button" onClick={load}>重新加载</button>
+          <Button onClick={load}>重新加载</Button>
         </div>
       ) : (
         <>
@@ -96,21 +95,13 @@ export function TemplatePanel(): ReactElement {
               <div><dt>存储路径</dt><dd className="mono" title={template.storedPath}>{template.storedPath}</dd></div>
             </dl>
           ) : (
-            <div className="empty-state template-empty">
-              <div className="empty-icon">◇</div>
-              <strong>还没有导入代码模板</strong>
-              <p>选择一个已完成的本地项目目录，复制到应用模板库。</p>
-            </div>
+              <Empty description="还没有导入代码模板" />
           )}
 
           <div className="template-actions">
-            <button className="primary-button" type="button" onClick={() => void handleImport()} disabled={busy}>
-              {busy ? '处理中…' : template !== null ? '重新导入模板' : '导入代码模板'}
-            </button>
+            <Button type="primary" loading={busy} onClick={() => void handleImport()}>{template !== null ? '重新导入模板' : '导入代码模板'}</Button>
             {template !== null && (
-              <button className="secondary-button" type="button" onClick={() => void handleReplace()} disabled={busy}>
-                替换模板
-              </button>
+              <Button onClick={() => void handleReplace()} disabled={busy}>替换模板</Button>
             )}
           </div>
         </>

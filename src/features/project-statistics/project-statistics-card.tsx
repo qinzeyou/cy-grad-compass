@@ -1,4 +1,5 @@
 import type { ReactElement } from 'react';
+import { Card } from 'antd';
 
 type CardTone = 'dark' | 'yellow' | 'green' | 'light';
 
@@ -23,9 +24,5 @@ export function ProjectStatisticsCard({ label, value, tone, onClick }: ProjectSt
       <div className={`metric-card ${tone}`}>{content}</div>
     );
   }
-  return (
-    <button className={`metric-card ${tone} clickable`} type="button" onClick={onClick} title={`查看${label}项目`}>
-      {content}
-    </button>
-  );
+  return <Card className={`metric-card ${tone} clickable`} onClick={onClick} title={`查看${label}项目`}>{content}</Card>;
 }

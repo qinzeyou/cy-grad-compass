@@ -1,20 +1,13 @@
+import { Button, Empty, Select, Tag, Typography } from 'antd';
+import { PlusOutlined } from '@ant-design/icons';
 import type { ReactElement } from 'react';
 import type { Project } from '../project-statistics/project-statistics-types';
 import type { DevelopmentSession } from './project-development-types';
 
-type Props = {
-  sessions: DevelopmentSession[];
-  projects: Project[];
-  selectedProjectId: string;
-  activeId: string;
-  onProjectSelect: (projectId: string) => void;
-  onSelect: (id: string) => void;
-  onCreate: () => void;
-  creating: boolean;
-};
+type Props = { sessions: DevelopmentSession[]; projects: Project[]; selectedProjectId: string; activeId: string; onProjectSelect: (projectId: string) => void; onSelect: (id: string) => void; onCreate: () => void; creating: boolean };
 const PHASE_LABELS = { discussion: '需求讨论', development: '开发执行' } as const;
 
-// 中文注释：先选择项目，再显示该项目的会话，避免未绑定项目时误发起 AI 对话。
+// 中文注释：左栏负责选择项目与会话，未选择项目时禁用新建会话按钮。
 export function DevelopmentSessionList({ sessions, projects, selectedProjectId, activeId, onProjectSelect, onSelect, onCreate, creating }: Props): ReactElement {
-  return <aside className="development-sessions"><div className="development-sidebar-head"><div><span className="eyebrow">PROJECT DEVELOPMENT</span><h2>项目开发</h2></div><button className="icon-button" type="button" onClick={onCreate} aria-label="新建开发会话" disabled={!selectedProjectId || creating}>＋</button></div><div className="project-select-wrap"><label htmlFor="development-project">当前项目</label><select id="development-project" value={selectedProjectId} onChange={(event) => onProjectSelect(event.target.value)} disabled={creating}><option value="">请选择项目</option>{projects.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}</select></div>{selectedProjectId && <div className="session-list">{sessions.map((session) => <button className={session.id === activeId ? 'session-item active' : 'session-item'} key={session.id} type="button" onClick={() => onSelect(session.id)} aria-current={session.id === activeId ? 'page' : undefined}><span className="session-status" /><span className="session-copy"><strong>{session.title}</strong><small>{PHASE_LABELS[session.phase]}</small></span></button>)}{sessions.length === 0 && <div className="session-empty">还没有开发会话<br /><span>点击右上角 ＋ 新建</span></div>}</div>}<div className="development-sidebar-foot">{selectedProjectId ? '本机 Codex · 工作区权限受限' : '请选择项目后开始对话'}</div></aside>;
+  return <aside className="development-sessions"><div className="development-sidebar-head"><div><Typography.Text className="eyebrow">PROJECT DEVELOPMENT</Typography.Text><Typography.Title level={4}>AI 对话</Typography.Title></div><Button type="primary" shape="circle" icon={<PlusOutlined />} onClick={onCreate} disabled={!selectedProjectId || creating} /></div><div className="project-select-wrap"><Typography.Text type="secondary">当前项目</Typography.Text><Select value={selectedProjectId || undefined} placeholder="请选择项目" options={projects.map((project) => ({ value: project.id, label: project.name }))} onChange={onProjectSelect} disabled={creating} /></div><div className="session-list">{selectedProjectId ? sessions.map((session) => <Button key={session.id} type="text" className={session.id === activeId ? 'session-item active' : 'session-item'} onClick={() => onSelect(session.id)}><span className="session-status" /><span className="session-copy"><strong>{session.title}</strong><small>{PHASE_LABELS[session.phase]}</small></span></Button>) : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="选择项目后开始" />}{selectedProjectId && sessions.length === 0 && <Typography.Text type="secondary" className="session-empty">还没有开发会话，点击右上角新建</Typography.Text>}</div><div className="development-sidebar-foot">{selectedProjectId ? <Tag color="blue">本机 Codex</Tag> : '请选择项目后开始对话'}</div></aside>;
 }

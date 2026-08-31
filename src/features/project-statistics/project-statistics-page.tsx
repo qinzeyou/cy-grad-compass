@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, type ReactElement } from 'react';
+import { Alert, Button, Spin, Typography } from 'antd';
 import { fetchProjectStatistics } from './project-statistics-api';
 import { ProjectStatisticsCard } from './project-statistics-card';
 import type { EmptyAction } from './recent-project-list';
@@ -61,15 +62,13 @@ export function ProjectStatisticsPage({ onNavigateToProjects, onEmptyAction }: P
       {notice !== null && (
         <div className="notice-banner" role="alert">
           <span>{notice}</span>
-          <button className="notice-close" type="button" onClick={() => setNotice(null)} aria-label="关闭提示">×</button>
+          <Button type="text" onClick={() => setNotice(null)} aria-label="关闭提示">×</Button>
         </div>
       )}
 
       {loadState === 'error' ? (
         <section className="error-panel">
-          <strong>统计加载失败</strong>
-          <p>无法读取本地数据库，请稍后重试。</p>
-          <button className="secondary-button" type="button" onClick={loadStatistics}>重新加载</button>
+          <Typography.Text strong>统计加载失败</Typography.Text><Typography.Text type="secondary">无法读取本地数据库，请稍后重试。</Typography.Text><Button onClick={loadStatistics}>重新加载</Button>
         </section>
       ) : (
         <>
@@ -93,9 +92,7 @@ export function ProjectStatisticsPage({ onNavigateToProjects, onEmptyAction }: P
                     <span className="eyebrow">RECENT PROJECTS</span>
                     <h3>最近项目</h3>
                   </div>
-                  <button className="text-button" type="button" onClick={() => onNavigateToProjects('all')}>
-                    查看全部 →
-                  </button>
+                  <Button type="link" onClick={() => onNavigateToProjects('all')}>查看全部 →</Button>
                 </div>
                 <RecentProjectList projects={statistics.recentProjects} onEmptyAction={onEmptyAction} onOpenPath={handleOpenPath} />
               </div>

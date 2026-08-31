@@ -24,6 +24,10 @@ declare global {
     desktopApi: {
       getAppVersion: () => Promise<string>;
       openPath: (path: string) => Promise<string>;
+      minimizeWindow: () => Promise<void>;
+      toggleMaximizeWindow: () => Promise<boolean>;
+      closeWindow: () => Promise<void>;
+      isMaximized: () => Promise<boolean>;
       selectDirectory: () => Promise<string | null>;
       getProjectStatistics: () => Promise<ProjectStatistics>;
       listProjects: (query: ProjectListQuery) => Promise<Project[]>;

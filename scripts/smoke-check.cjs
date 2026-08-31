@@ -1,7 +1,7 @@
 // 中文注释：临时验证脚本：创建真实窗口，验证 preload 白名单 API、统计 IPC 与数据库可用性。
 // 运行方式：electron scripts/smoke-check.cjs（验证后即删除，不属于交付范围）。
 // 使用 CommonJS：Electron 44 的主进程 ESM 无法从 'electron' 模块获取命名导出。
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, Menu } = require('electron');
 const { join } = require('node:path');
 const { closeDatabase, openDatabase } = require('../dist-electron/database/connection.js');
 const { getDatabaseFilePath, getTemplatesDirectory } = require('../dist-electron/database/paths.js');
@@ -11,6 +11,10 @@ const { registerProjectIpcHandlers } = require('../dist-electron/ipc/project-han
 const { registerTemplateIpcHandlers } = require('../dist-electron/ipc/template-handlers.js');
 const { ProjectService } = require('../dist-electron/services/project-service.js');
 const { TemplateService } = require('../dist-electron/services/template-service.js');
+const { CodexController } = require('../dist-electron/development/codex-controller.js');
+const { DevelopmentRepository } = require('../dist-electron/development/development-repository.js');
+const { DevelopmentService } = require('../dist-electron/development/development-service.js');
+const { registerDevelopmentIpcHandlers } = require('../dist-electron/development/development-handlers.js');
 
 const projectRoot = join(__dirname, '..');
 
@@ -23,6 +27,7 @@ function fail(message) {
 
 app.whenReady().then(async () => {
   try {
+    Menu.setApplicationMenu(null);
     const database = openDatabase(getDatabaseFilePath());
     const projectRepository = new ProjectRepository(database);
     const templateRepository = new TemplateRepository(database);
@@ -31,6 +36,8 @@ app.whenReady().then(async () => {
     ipcMain.handle('system:get-app-version', () => app.getVersion());
     registerProjectIpcHandlers(service);
     registerTemplateIpcHandlers(new TemplateService(templateRepository, getTemplatesDirectory()));
+    registerDevelopmentIpcHandlers(new DevelopmentService(projectRepository, new DevelopmentRepository(database), new CodexController(), () => undefined));
+    ipcMain.handle('window:is-maximized', () => false);
 
     const window = new BrowserWindow({
       width: 1100,
@@ -48,7 +55,7 @@ app.whenReady().then(async () => {
       const api = window.desktopApi;
       const stats = await api.getProjectStatistics();
       const list = await api.listProjects({});
-      const navItems = [...document.querySelectorAll('.nav-item')];
+      const navItems = [...document.querySelectorAll('.ant-menu-item')];
       const developmentNav = navItems.find((item) => item.textContent?.includes('项目开发'));
       developmentNav?.click();
       await new Promise((resolve) => setTimeout(resolve, 100));
@@ -59,8 +66,11 @@ app.whenReady().then(async () => {
         version: await api.getAppVersion(),
         hasTemplateApi: typeof api.getTemplate === 'function' && typeof api.createProject === 'function',
         navLabels: navItems.map((item) => item.textContent?.trim()),
-        hasIntegratedManagement: document.querySelector('.development-view-switch') !== null
-          && document.body.innerText.includes('项目列表'),
+        hasIntegratedManagement: document.body.innerText.includes('项目管理'),
+        hasAntdLayout: document.querySelector('.ant-layout') !== null,
+        hasWindowBar: document.querySelector('.window-bar') !== null,
+        hasWorkbench: document.querySelector('.development-workbench') !== null,
+        hasNativeMenus: ['File', 'Edit', 'View'].some((label) => document.body.innerText.includes(label)),
       };
     })()`);
 
@@ -74,12 +84,13 @@ app.whenReady().then(async () => {
     } else {
       console.log(`✔ 统计 IPC 正常，项目总数 ${result.stats.total}，项目列表 ${result.listCount} 条`);
     }
-    if (result.navLabels.includes('项目管理')) {
-      fail('侧边栏仍包含独立的项目管理菜单');
-    }
-    if (!result.hasIntegratedManagement) {
-      fail('项目开发页未展示集成的项目管理视图');
-    }
+    if (!result.navLabels.includes('项目管理')) fail('缺少项目管理菜单');
+    if (result.navLabels.includes('模板管理')) fail('仍包含独立的模板管理菜单');
+    if (!result.hasIntegratedManagement) fail('项目管理页未展示');
+    if (!result.hasAntdLayout) fail('页面未使用 Ant Design Layout');
+    if (!result.hasWindowBar) fail('缺少自定义窗口栏');
+    if (!result.hasWorkbench) fail('项目开发页未展示三栏工作台');
+    if (result.hasNativeMenus) fail('页面仍展示原生系统菜单文本');
 
     closeDatabase(database);
   } catch (error) {
