@@ -6,6 +6,7 @@ import { ProjectRepository } from './database/project-repository.js';
 import { TemplateRepository } from './database/template-repository.js';
 import { registerProjectIpcHandlers } from './ipc/project-handlers.js';
 import { registerTemplateIpcHandlers } from './ipc/template-handlers.js';
+import { registerAiIpcHandlers } from './ipc/ai-handlers.js';
 import { ProjectService } from './services/project-service.js';
 import { TemplateService } from './services/template-service.js';
 import { CodexController } from './development/codex-controller.js';
@@ -75,6 +76,8 @@ app.whenReady().then(() => {
   registerProjectIpcHandlers(projectService);
   registerTemplateIpcHandlers(templateService);
   registerDevelopmentIpcHandlers(developmentService);
+  // 中文注释：AI 配置读写与连通性测试独立于项目数据库，配置放在 userData 根目录。
+  registerAiIpcHandlers({ getUserDataPath: () => app.getPath('userData') });
 
   // 中文注释：仅开放最小系统能力，模板与项目操作都走各自专用通道。
   ipcMain.handle('system:get-app-version', () => app.getVersion());

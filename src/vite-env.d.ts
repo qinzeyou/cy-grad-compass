@@ -17,6 +17,11 @@ import type {
   DevelopmentSession,
   DevelopmentSessionDetail,
 } from './features/project-development/project-development-types';
+import type {
+  AiConfigDto,
+  AiConnectionResult,
+  AiSaveConfigInput,
+} from './features/settings/settings-types';
 
 declare global {
   interface Window {
@@ -46,6 +51,9 @@ declare global {
       stopDevelopment: (sessionId: string) => Promise<void>;
       deleteDevelopmentSession: (sessionId: string) => Promise<void>;
       subscribeDevelopmentEvents: (listener: (envelope: DevelopmentEventEnvelope) => void) => () => void;
+      getAiConfig: () => Promise<AiConfigDto>;
+      saveAiConfig: (input: AiSaveConfigInput) => Promise<AiConfigDto>;
+      testAiConnection: () => Promise<AiConnectionResult>;
     };
   }
 }

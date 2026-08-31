@@ -15,6 +15,7 @@ import type {
   DevelopmentSession,
   DevelopmentSessionDetail,
 } from './development/development-types.js';
+import type { AiConfigDto, AiConnectionResult, AiSaveConfigInput } from './ai/ai-types.js';
 
 // 中文注释：Electron 会把主进程抛出的错误包装成
 // "Error invoking remote method '<通道>': Error: <消息>"，这里还原成只含中文消息的
@@ -73,4 +74,9 @@ contextBridge.exposeInMainWorld('desktopApi', {
     ipcRenderer.on('development:event', handler);
     return () => ipcRenderer.off('development:event', handler);
   },
+
+  // AI 设置
+  getAiConfig: (): Promise<AiConfigDto> => invoke('ai:get-config'),
+  saveAiConfig: (input: AiSaveConfigInput): Promise<AiConfigDto> => invoke('ai:save-config', input),
+  testAiConnection: (): Promise<AiConnectionResult> => invoke('ai:test-connection'),
 });
