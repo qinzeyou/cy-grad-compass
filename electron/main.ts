@@ -33,6 +33,7 @@ function createWindow(): void {
     minHeight: 640,
     frame: false,
     backgroundColor: '#F5F7FA',
+    icon: join(currentDirectory, '../assets/logo.png'),
     show: false,
     webPreferences: {
       // 中文注释：preload 编译为 CommonJS 产物，保证沙箱渲染进程中可以正常加载。

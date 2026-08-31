@@ -71,6 +71,8 @@ app.whenReady().then(async () => {
         hasIntegratedManagement: document.body.innerText.includes('项目管理'),
         hasAntdLayout: document.querySelector('.ant-layout') !== null,
         hasWindowBar: document.querySelector('.window-bar') !== null,
+        globalLogoIsImage: document.querySelector('.window-logo')?.tagName === 'IMG',
+        faviconPresent: document.querySelector('link[rel="icon"]')?.getAttribute('href')?.includes('logo'),
         hasWorkbench: document.querySelector('.development-workbench') !== null,
         developmentContentFlush: getComputedStyle(query('.development-content')).padding === '0px',
         hasNativeMenus: ['File', 'Edit', 'View'].some((label) => document.body.innerText.includes(label)),
@@ -108,6 +110,7 @@ app.whenReady().then(async () => {
     if (!result.hasIntegratedManagement) fail('项目管理页未展示');
     if (!result.hasAntdLayout) fail('页面未使用 Ant Design Layout');
     if (!result.hasWindowBar) fail('缺少自定义窗口栏');
+    if (!result.globalLogoIsImage || !result.faviconPresent) fail('全局 Logo 或 favicon 未替换');
     if (!result.hasWorkbench) fail('项目开发页未展示三栏工作台');
     if (!result.developmentContentFlush) fail('项目开发页仍有外层间距');
     if (!result.removedDevelopmentLabels) fail('项目开发页仍显示不必要提示');
