@@ -74,10 +74,13 @@ app.whenReady().then(async () => {
         windowBarVisible: getComputedStyle(document.querySelector('.window-bar')).display !== 'none',
         windowBrandVisible: document.querySelector('.window-bar-brand') !== null,
         sidebarBackground: getComputedStyle(document.querySelector('.app-sidebar')).backgroundColor,
-        sidebarFullHeight: document.querySelector('.app-sidebar').getBoundingClientRect().height >= window.innerHeight - 1,
+        sidebarFullHeight: document.querySelector('.app-sidebar').getBoundingClientRect().height >= window.innerHeight - 48 - 1,
+        sidebarMenuDividerRemoved: getComputedStyle(document.querySelector('.app-sidebar .ant-menu')).borderInlineEndWidth === '0px',
         brandAlignedWithSidebar: Math.abs(document.querySelector('.window-bar-brand').getBoundingClientRect().width - document.querySelector('.app-sidebar').getBoundingClientRect().width) < 1,
         hasDevelopmentTopAction: [...document.querySelectorAll('.page-heading button')].some((button) => button.textContent?.includes('新建项目')),
-        brandDividerRemoved: getComputedStyle(document.querySelector('.window-bar-brand')).borderRightWidth === '0px',
+        mainLayoutLocked: getComputedStyle(document.querySelector('.main-layout')).overflow === 'hidden',
+        pageHeadingVisible: document.querySelector('.page-heading').getBoundingClientRect().top >= 0,
+        brandDividerPresent: getComputedStyle(document.querySelector('.window-bar-brand')).borderRightWidth !== '0px',
         logoRound: getComputedStyle(document.querySelector('.window-logo')).borderRadius === '50%',
         brandHasNoSubtitle: document.querySelectorAll('.window-bar-brand .ant-typography').length === 1,
       };
@@ -105,7 +108,9 @@ app.whenReady().then(async () => {
     if (!result.sidebarFullHeight) fail('侧边栏高度未占满窗口');
     if (!result.brandAlignedWithSidebar) fail('系统标识与侧边菜单没有处于同一列');
     if (!result.hasDevelopmentTopAction) fail('项目开发页顶部操作不可见');
-    if (!result.brandDividerRemoved) fail('Logo 与系统名称下方仍存在分隔线');
+    if (!result.mainLayoutLocked || !result.pageHeadingVisible) fail('主布局未锁定，顶栏可能被项目开发内容挤出');
+    if (!result.brandDividerPresent) fail('Logo 区域右侧分隔线未显示');
+    if (!result.sidebarMenuDividerRemoved) fail('侧边菜单仍显示 AntD 右侧分隔线');
     if (!result.logoRound) fail('Logo 未使用圆形包裹');
     if (!result.brandHasNoSubtitle) fail('系统名称下方仍存在副标题');
 
