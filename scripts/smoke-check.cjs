@@ -82,6 +82,7 @@ app.whenReady().then(async () => {
         sidebarMenuDividerRemoved: getComputedStyle(query('.app-sidebar .ant-menu')).borderInlineEndWidth === '0px',
         brandAlignedWithSidebar: Math.abs(rect('.window-bar-brand').width - rect('.app-sidebar').width) < 1,
         hasDevelopmentProjectSelector: query('.project-select-wrap') !== null,
+        hasSessionDeleteControl: query('.session-delete') !== null,
         mainLayoutLocked: getComputedStyle(query('.main-layout')).overflow === 'hidden',
         contentVisible: rect('.app-content').height > 100,
         contentHeight: rect('.app-content').height,
