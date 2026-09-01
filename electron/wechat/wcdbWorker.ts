@@ -4,7 +4,10 @@ import { WcdbCore } from './services/wcdbCore'
 const core = new WcdbCore()
 
 if (parentPort) {
-    parentPort.on('message', async (msg) => {
+    // Native WCDB is process-global; serialize calls so concurrent connect/analyze
+    // requests cannot initialize or shut down the DLL at the same time.
+    let messageQueue: Promise<void> = Promise.resolve()
+    const handleMessage = async (msg: any): Promise<void> => {
         const { id, type, payload } = msg
 
         try {
@@ -304,5 +307,11 @@ if (parentPort) {
         } catch (e) {
             parentPort!.postMessage({ id, error: String(e) })
         }
+    }
+
+    parentPort.on('message', (msg) => {
+        messageQueue = messageQueue.then(() => handleMessage(msg)).catch((error) => {
+            parentPort!.postMessage({ id: msg?.id, error: String(error) })
+        })
     })
 }
