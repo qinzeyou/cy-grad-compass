@@ -22,12 +22,10 @@ describe('微信设置', () => {
     await waitFor(() => expect(input).toHaveProperty('value', 'E:/projects'));
   });
 
-  it('选择 WeFlow 源码目录后回填输入框', async () => {
-    installDesktopApiMock({ selectDirectory: async () => 'D:/project/work/scimon/WeFlow' });
+  it('不再读取 WeFlow 配置', async () => {
+    const api = installDesktopApiMock();
     render(<WechatSettingsPanel />);
     await screen.findByText('微信数据源');
-    const input = screen.getAllByRole('textbox')[2];
-    fireEvent.click(screen.getAllByRole('button', { name: /选\s*择/ })[2]);
-    await waitFor(() => expect(input).toHaveProperty('value', 'D:/project/work/scimon/WeFlow'));
+    expect(api.getWeFlowConfig).not.toHaveBeenCalled();
   });
 });

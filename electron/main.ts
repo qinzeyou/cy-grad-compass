@@ -18,11 +18,12 @@ import { registerOrderIpcHandlers } from './ipc/order-handlers.js';
 import { registerWeFlowIpcHandlers } from './ipc/weflow-handlers.js';
 import { wechatService } from './wechat/wechat-service.js';
 import { canConnectWechat, readWechatConfig } from './wechat/wechat-config.js';
-import { readWeFlowConfig } from './weflow/weflow-config.js';
-import { weFlowBridge } from './weflow/weflow-bridge.js';
+import { prepareWcdbRuntimeEnv } from './wechat/runtime-env.js';
 import type { OrderService } from './orders/order-service.js';
 
-// 中文注释：主进程编译为 CommonJS（Electron 44 的 ESM 无法从 'electron' 模块获取命名导出），
+prepareWcdbRuntimeEnv();
+
+// 中文注释：主进程编译为 CommonJS，直接使用 __dirname 定位资源目录。
 // CommonJS 环境直接使用 __dirname 定位资源目录。
 const currentDirectory = __dirname;
 
@@ -32,24 +33,7 @@ let developmentService: DevelopmentService | null = null;
 let mainWindow: BrowserWindow | null = null;
 let shutdownStarted = false;
 let orderService: OrderService | null = null;
-let weFlowMonitor: NodeJS.Timeout | null = null;
-
 async function restoreWechatRuntime(): Promise<void> {
-  if (weFlowMonitor) { clearInterval(weFlowMonitor); weFlowMonitor = null; }
-  const weflowConfig = await readWeFlowConfig(app.getPath('userData'));
-  if (weflowConfig.apiToken || weflowConfig.sourcePath) {
-    if (wechatService.isReady()) await wechatService.stop();
-    try {
-      await weFlowBridge.ensureRunning(weflowConfig);
-      weFlowMonitor = setInterval(() => {
-        if (!orderService) return;
-        void orderService.analyze().then(() => mainWindow?.webContents.send('order:changed')).catch((error: unknown) => console.error('[order] WeFlow poll failed', error));
-      }, 15000);
-    } catch (error) {
-      console.error(`[weflow] ${error instanceof Error ? error.message : String(error)}`);
-    }
-    return;
-  }
   const config = await readWechatConfig(app.getPath('userData'));
   if (!config.enabled || !canConnectWechat(config)) {
     if (wechatService.isReady()) await wechatService.stop();
@@ -150,7 +134,6 @@ app.on('before-quit', (event) => {
   if (shutdownStarted || developmentService === null) return;
   event.preventDefault();
   shutdownStarted = true;
-  if (weFlowMonitor) { clearInterval(weFlowMonitor); weFlowMonitor = null; }
   void developmentService.dispose().finally(() => wechatService.stop()).finally(() => {
     if (database !== null) {
       closeDatabase(database);

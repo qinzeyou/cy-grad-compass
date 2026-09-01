@@ -1,6 +1,6 @@
 // 中文注释：临时验证脚本：创建真实窗口，验证 preload 白名单 API、统计 IPC 与数据库可用性。
 // 运行方式：electron scripts/smoke-check.cjs（验证后即删除，不属于交付范围）。
-// 使用 CommonJS：Electron 44 的主进程 ESM 无法从 'electron' 模块获取命名导出。
+// 使用 CommonJS：主进程直接加载 Electron 和本地编译产物。
 const { app, BrowserWindow, ipcMain, Menu } = require('electron');
 const { join } = require('node:path');
 const { closeDatabase, openDatabase } = require('../dist-electron/database/connection.js');

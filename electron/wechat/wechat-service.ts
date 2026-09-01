@@ -1,11 +1,15 @@
 import { join } from 'node:path';
+import { existsSync } from 'node:fs';
 import { app } from 'electron';
 import { wcdbService } from './services/wcdbService.js';
 import type { WechatMessage } from '../orders/order-types.js';
 import type { WechatConfig, WechatConnectionResult, WechatSession } from './wechat-types.js';
 
 function resourcesPath(): string {
-  return process.env.VITE_DEV_SERVER_URL ? join(process.cwd(), 'resources') : process.resourcesPath;
+  const candidate = process.env.VITE_DEV_SERVER_URL
+    ? join(app.getAppPath(), 'resources')
+    : join(process.resourcesPath, 'resources');
+  return existsSync(candidate) ? candidate : join(process.cwd(), 'resources');
 }
 
 function mapSession(raw: any): WechatSession {

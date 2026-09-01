@@ -5,8 +5,6 @@ import { readAiConfig } from '../ai/config-repository.js';
 import type { AppDatabase } from '../database/connection.js';
 import { canConnectWechat, readWechatConfig } from '../wechat/wechat-config.js';
 import { wechatService } from '../wechat/wechat-service.js';
-import { readWeFlowConfig } from '../weflow/weflow-config.js';
-import { weFlowBridge } from '../weflow/weflow-bridge.js';
 import { analyzeDeal } from './deal-analyzer.js';
 import { formatFolderName, matchesRemarkPrefix, nextAvailableFolderName, renderFolderTemplate } from './order-utils.js';
 import { scanProjectFolders } from './folder-scanner.js';
@@ -20,8 +18,8 @@ export interface DealDashboard {
   summary: RevenueSummary;
 }
 
-export function shouldUseWeFlow(config: { enabled: boolean }, weflowConfig: { apiToken: string; sourcePath: string; executablePath: string }): boolean {
-  return !config.enabled || Boolean(weflowConfig.apiToken || weflowConfig.sourcePath || weflowConfig.executablePath);
+export function shouldUseWeFlow(_config: { enabled: boolean }, _weflowConfig: { apiToken: string; sourcePath: string; executablePath: string }): boolean {
+  return false;
 }
 
 export class OrderService {
@@ -30,20 +28,11 @@ export class OrderService {
 
   async analyze(): Promise<DealDashboard> {
     const config = await readWechatConfig(this.userDataPath);
-    const weflowConfig = await readWeFlowConfig(this.userDataPath);
-    let sessions: WechatSession[];
-    let readMessages: (session: WechatSession) => Promise<WechatMessage[]>;
-    if (shouldUseWeFlow(config, weflowConfig)) {
-      await weFlowBridge.ensureRunning(weflowConfig);
-      sessions = await weFlowBridge.listSessions(weflowConfig);
-      readMessages = (session) => weFlowBridge.listMessages(weflowConfig, session);
-    } else {
-      if (!canConnectWechat(config)) throw new Error('请先配置 WeFlow API Token，或配置旧版微信账号目录和解密 Key');
-      const connection = await wechatService.connect(config);
-      if (!connection.ok) throw new Error(connection.message);
-      sessions = await wechatService.listSessions();
-      readMessages = (session) => wechatService.listMessages(session);
-    }
+    if (!canConnectWechat(config)) throw new Error('请先配置微信账号目录和解密 Key');
+    const connection = await wechatService.connect(config);
+    if (!connection.ok) throw new Error(connection.message);
+    const sessions = await wechatService.listSessions();
+    const readMessages = (session: WechatSession) => wechatService.listMessages(session);
     const selected = new Set(config.selectedSessionIds);
     const targets = sessions.filter((session) => selected.has(session.id) || Boolean(session.remarkName && matchesRemarkPrefix(session.remarkName, config.remarkPrefixes)));
     const folders = await scanProjectFolders(config.projectsRoot).catch(() => []);
