@@ -4,13 +4,15 @@
   "description": "毕业设计项目生成与管理工具",
   "main": "dist-electron/main.js",
   "scripts": {
-    "dev": "concurrently -k \"vite --host 127.0.0.1\" \"wait-on http://localhost:5173 && cross-env VITE_DEV_SERVER_URL=http://localhost:5173 electron .\"",
+    "prepare:electron-runtime": "node scripts/prepare-electron-runtime.cjs",
+    "postinstall": "npm run prepare:electron-runtime",
+    "dev": "npm run prepare:electron-runtime && concurrently -k \"vite --host 127.0.0.1\" \"wait-on http://localhost:5173 && cross-env VITE_DEV_SERVER_URL=http://localhost:5173 electron .\"",
     "build": "tsc -b && vite build && tsc -p electron/tsconfig.json",
-    "start": "electron .",
-    "test": "npm run build && node --test \"dist-electron/database/*.test.js\" \"dist-electron/tests/*.test.js\" && vitest run",
+    "start": "npm run prepare:electron-runtime && electron .",
+    "test": "npm run build && node --test \"scripts/*.test.cjs\" \"dist-electron/database/*.test.js\" \"dist-electron/tests/*.test.js\" && vitest run",
     "test:ui": "vitest run",
-    "seed": "npm run build && electron scripts/seed-demo-data.cjs",
-    "smoke": "npm run build && electron scripts/smoke-check.cjs",
+    "seed": "npm run build && npm run prepare:electron-runtime && electron scripts/seed-demo-data.cjs",
+    "smoke": "npm run build && npm run prepare:electron-runtime && electron scripts/smoke-check.cjs",
     "preview": "vite preview"
   },
   "dependencies": {
