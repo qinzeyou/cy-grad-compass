@@ -1,0 +1,24 @@
+.order-analysis-page { display:grid; gap:16px; }
+.order-metrics-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+.order-metrics-grid .ant-card { border:0; box-shadow:none; background:#fff; }
+.order-metrics-grid .ant-card-body { display:grid; gap:10px; min-height:112px; }
+.order-metrics-grid strong { margin-top:auto; color:#18212B; font:600 30px 'DM Mono',monospace; }
+.order-analysis-grid { display:grid; grid-template-columns:1.25fr .75fr; gap:16px; }
+.candidate-list { display:grid; gap:8px; }
+.candidate-row { display:grid; grid-template-columns:1fr auto auto auto; gap:14px; align-items:center; width:100%; padding:13px 14px; text-align:left; border:1px solid #E6EBF1; border-radius:6px; background:#fff; cursor:pointer; }
+.candidate-row:hover { border-color:#2F6BFF; background:#F8FAFF; }
+.candidate-row > div:first-child { display:grid; gap:4px; min-width:0; }
+.candidate-row > div:nth-child(2) { display:grid; gap:3px; justify-items:end; }
+.candidate-row small { color:#8A98A9; white-space:nowrap; }
+.candidate-actions { opacity:.85; }
+.revenue-bars { display:grid; gap:22px; padding:18px 0; }
+.revenue-bars > div { display:grid; grid-template-columns:48px 1fr auto; gap:10px; align-items:center; }
+.revenue-bars span { color:#637083; font-size:12px; }
+.revenue-bars i { height:10px; border-radius:5px; background:#2F6BFF; }
+.revenue-bars i.refund { background:#F0A34A; }.revenue-bars i.net { background:#39A873; }
+.revenue-bars b { font:500 12px 'DM Mono',monospace; }
+.order-table-card .ant-table-row { cursor:pointer; }
+.evidence-timeline { display:grid; gap:12px; max-height:52vh; overflow:auto; }
+.evidence-timeline > div { padding:10px 12px; border-left:3px solid #D9E0EA; background:#F8FAFC; }
+.evidence-timeline p { margin:6px 0 0; white-space:pre-wrap; }
+@media (max-width:1100px) { .order-metrics-grid { grid-template-columns:repeat(2,1fr); }.order-analysis-grid { grid-template-columns:1fr; }.candidate-row { grid-template-columns:1fr auto; }.candidate-row small,.candidate-actions { grid-column:2; } }

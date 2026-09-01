@@ -13,6 +13,14 @@ import { CodexController } from './development/codex-controller.js';
 import { DevelopmentRepository } from './development/development-repository.js';
 import { DevelopmentService } from './development/development-service.js';
 import { registerDevelopmentIpcHandlers, sendDevelopmentEvent } from './development/development-handlers.js';
+import { registerWechatIpcHandlers } from './ipc/wechat-handlers.js';
+import { registerOrderIpcHandlers } from './ipc/order-handlers.js';
+import { registerWeFlowIpcHandlers } from './ipc/weflow-handlers.js';
+import { wechatService } from './wechat/wechat-service.js';
+import { canConnectWechat, readWechatConfig } from './wechat/wechat-config.js';
+import { readWeFlowConfig } from './weflow/weflow-config.js';
+import { weFlowBridge } from './weflow/weflow-bridge.js';
+import type { OrderService } from './orders/order-service.js';
 
 // 中文注释：主进程编译为 CommonJS（Electron 44 的 ESM 无法从 'electron' 模块获取命名导出），
 // CommonJS 环境直接使用 __dirname 定位资源目录。
@@ -23,6 +31,42 @@ let database: AppDatabase | null = null;
 let developmentService: DevelopmentService | null = null;
 let mainWindow: BrowserWindow | null = null;
 let shutdownStarted = false;
+let orderService: OrderService | null = null;
+let weFlowMonitor: NodeJS.Timeout | null = null;
+
+async function restoreWechatRuntime(): Promise<void> {
+  if (weFlowMonitor) { clearInterval(weFlowMonitor); weFlowMonitor = null; }
+  const weflowConfig = await readWeFlowConfig(app.getPath('userData'));
+  if (weflowConfig.apiToken || weflowConfig.sourcePath) {
+    if (wechatService.isReady()) await wechatService.stop();
+    try {
+      await weFlowBridge.ensureRunning(weflowConfig);
+      weFlowMonitor = setInterval(() => {
+        if (!orderService) return;
+        void orderService.analyze().then(() => mainWindow?.webContents.send('order:changed')).catch((error: unknown) => console.error('[order] WeFlow poll failed', error));
+      }, 15000);
+    } catch (error) {
+      console.error(`[weflow] ${error instanceof Error ? error.message : String(error)}`);
+    }
+    return;
+  }
+  const config = await readWechatConfig(app.getPath('userData'));
+  if (!config.enabled || !canConnectWechat(config)) {
+    if (wechatService.isReady()) await wechatService.stop();
+    return;
+  }
+  const connection = await wechatService.connect(config);
+  if (!connection.ok) {
+    console.error(`[wechat] ${connection.message}`);
+    return;
+  }
+  wechatService.startMonitor(() => {
+    if (!orderService) return;
+    void orderService.analyze()
+      .then(() => mainWindow?.webContents.send('order:changed'))
+      .catch((error: unknown) => console.error('[order] monitor analyze failed', error));
+  });
+}
 
 // 中文注释：创建桌面窗口，开发环境加载 Vite，生产环境加载构建后的静态页面。
 function createWindow(): void {
@@ -77,6 +121,9 @@ app.whenReady().then(() => {
   registerProjectIpcHandlers(projectService);
   registerTemplateIpcHandlers(templateService);
   registerDevelopmentIpcHandlers(developmentService);
+  orderService = registerOrderIpcHandlers(database, app.getPath('userData'));
+  registerWechatIpcHandlers({ getUserDataPath: () => app.getPath('userData'), onConfigChanged: restoreWechatRuntime });
+  registerWeFlowIpcHandlers({ getUserDataPath: () => app.getPath('userData'), onConfigChanged: restoreWechatRuntime });
   // 中文注释：AI 配置读写与连通性测试独立于项目数据库，配置放在 userData 根目录。
   registerAiIpcHandlers({ getUserDataPath: () => app.getPath('userData') });
 
@@ -89,6 +136,7 @@ app.whenReady().then(() => {
   ipcMain.handle('window:is-maximized', () => mainWindow?.isMaximized() ?? false);
 
   createWindow();
+  void restoreWechatRuntime();
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
@@ -102,7 +150,8 @@ app.on('before-quit', (event) => {
   if (shutdownStarted || developmentService === null) return;
   event.preventDefault();
   shutdownStarted = true;
-  void developmentService.dispose().finally(() => {
+  if (weFlowMonitor) { clearInterval(weFlowMonitor); weFlowMonitor = null; }
+  void developmentService.dispose().finally(() => wechatService.stop()).finally(() => {
     if (database !== null) {
       closeDatabase(database);
       database = null;

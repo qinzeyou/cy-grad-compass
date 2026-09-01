@@ -2,6 +2,7 @@
 import type { ReactElement } from 'react';
 import { Typography } from 'antd';
 import { AiSettingsPanel } from './ai-settings-panel';
+import { WechatSettingsPanel } from './wechat-settings-panel';
 
 export function SettingsPage(): ReactElement {
   return (
@@ -9,9 +10,10 @@ export function SettingsPage(): ReactElement {
       <div className="settings-heading">
         <Typography.Text className="eyebrow">SETTINGS</Typography.Text>
         <Typography.Title level={3} style={{ margin: '6px 0 0' }}>设置</Typography.Title>
-        <Typography.Text type="secondary">配置 DeepSeek 服务并验证连通性</Typography.Text>
+        <Typography.Text type="secondary">配置 DeepSeek 与 WeFlow 数据源并验证连通性</Typography.Text>
       </div>
       <AiSettingsPanel />
+      <WechatSettingsPanel />
     </div>
   );
 }

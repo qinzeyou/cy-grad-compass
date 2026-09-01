@@ -61,4 +61,14 @@ export function registerProjectIpcHandlers(service: ProjectService): void {
     }
     return filePaths[0];
   });
+
+  ipcMain.handle('dialog:select-file', async () => {
+    const { canceled, filePaths } = await dialog.showOpenDialog({
+      title: '选择 WeFlow 可执行文件',
+      buttonLabel: '选择',
+      properties: ['openFile'],
+      filters: [{ name: '应用程序', extensions: ['exe'] }],
+    });
+    return canceled || filePaths.length === 0 ? null : filePaths[0];
+  });
 }

@@ -5,6 +5,9 @@ import type { DevelopmentSessionDetail } from '../features/project-development/p
 import type { Project, ProjectStatistics } from '../features/project-statistics/project-statistics-types';
 import type { Template } from '../features/project-management/project-management-types';
 import type { AiConfigDto, AiConnectionResult, AiSaveConfigInput } from '../features/settings/settings-types';
+import type { WechatConfigDto, WechatConnectionResult, WechatSession } from '../features/settings/wechat-types';
+import type { WeFlowConfigDto, WeFlowConnectionResult } from '../../electron/weflow/weflow-types';
+import type { OrderDashboard } from '../features/order-analysis/order-types';
 
 function makeProject(): Project {
   return {
@@ -49,6 +52,7 @@ export function installDesktopApiMock(overrides: Partial<Window['desktopApi']> =
     closeWindow: vi.fn(async () => undefined),
     isMaximized: vi.fn(async () => false),
     selectDirectory: vi.fn(async () => null),
+    selectFile: vi.fn(async () => null),
     getProjectStatistics: vi.fn(async () => makeStatistics()),
     listProjects: vi.fn(async () => []),
     updateProject: vi.fn(async () => ({ project: makeProject(), statistics: makeStatistics() })),
@@ -79,6 +83,20 @@ export function installDesktopApiMock(overrides: Partial<Window['desktopApi']> =
       hasApiKey: true,
     })),
     testAiConnection: vi.fn(async (): Promise<AiConnectionResult> => ({ ok: true, provider: 'deepseek', model: 'deepseek-chat', elapsedMs: 120 })),
+    getWechatConfig: vi.fn(async (): Promise<WechatConfigDto> => ({ accountDir: '', hasDecryptKey: false, enabled: false, remarkPrefixes: ['鱼', '书'], selectedSessionIds: [], projectsRoot: 'E:\\副业\\开发', folderTemplate: '{MM-DD}_{projectName}' })),
+    saveWechatConfig: vi.fn(async (): Promise<WechatConfigDto> => ({ accountDir: '', hasDecryptKey: true, enabled: false, remarkPrefixes: ['鱼', '书'], selectedSessionIds: [], projectsRoot: 'E:\\副业\\开发', folderTemplate: '{MM-DD}_{projectName}' })),
+    testWechatConnection: vi.fn(async (): Promise<WechatConnectionResult> => ({ ok: false, message: '未配置' })),
+    listWechatSessions: vi.fn(async (): Promise<WechatSession[]> => []),
+    getWeFlowConfig: vi.fn(async (): Promise<WeFlowConfigDto> => ({ sourcePath: '', executablePath: '', baseUrl: 'http://127.0.0.1:5031', autoStart: false, hasApiToken: false })),
+    saveWeFlowConfig: vi.fn(async (): Promise<WeFlowConfigDto> => ({ sourcePath: '', executablePath: '', baseUrl: 'http://127.0.0.1:5031', autoStart: false, hasApiToken: true })),
+    testWeFlowConnection: vi.fn(async (): Promise<WeFlowConnectionResult> => ({ ok: false, message: '未配置 WeFlow API Token' })),
+    listWeFlowSessions: vi.fn(async (): Promise<WechatSession[]> => []),
+    getOrderDashboard: vi.fn(async (): Promise<OrderDashboard> => ({ candidates: [], orders: [], summary: { gross: 0, refunds: 0, net: 0, orderCount: 0, pendingCandidateCount: 0 } })),
+    analyzeOrders: vi.fn(async (): Promise<OrderDashboard> => ({ candidates: [], orders: [], summary: { gross: 0, refunds: 0, net: 0, orderCount: 0, pendingCandidateCount: 0 } })),
+    confirmOrderCandidate: vi.fn(),
+    addOrderTransaction: vi.fn(),
+    addOrderMaintenance: vi.fn(),
+    subscribeOrderChanges: vi.fn(() => () => undefined),
     ...overrides,
   };
   window.desktopApi = api;

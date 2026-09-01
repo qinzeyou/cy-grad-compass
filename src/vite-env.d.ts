@@ -22,6 +22,9 @@ import type {
   AiConnectionResult,
   AiSaveConfigInput,
 } from './features/settings/settings-types';
+import type { DealCandidate, OrderRecord, RevenueSummary } from './features/order-analysis/order-types';
+import type { WechatConfigDto, WechatConnectionResult, WechatSession } from './features/settings/wechat-types';
+import type { WeFlowConfigDto, WeFlowConnectionResult } from '../electron/weflow/weflow-types';
 
 declare global {
   interface Window {
@@ -34,6 +37,7 @@ declare global {
       closeWindow: () => Promise<void>;
       isMaximized: () => Promise<boolean>;
       selectDirectory: () => Promise<string | null>;
+      selectFile: () => Promise<string | null>;
       getProjectStatistics: () => Promise<ProjectStatistics>;
       listProjects: (query: ProjectListQuery) => Promise<Project[]>;
       updateProjectStatus: (id: string, status: ProjectStatus) => Promise<ProjectUpdateResult>;
@@ -54,6 +58,20 @@ declare global {
       getAiConfig: () => Promise<AiConfigDto>;
       saveAiConfig: (input: AiSaveConfigInput) => Promise<AiConfigDto>;
       testAiConnection: () => Promise<AiConnectionResult>;
+      getWechatConfig: () => Promise<WechatConfigDto>;
+      saveWechatConfig: (input: unknown) => Promise<WechatConfigDto>;
+      testWechatConnection: () => Promise<WechatConnectionResult>;
+      listWechatSessions: () => Promise<WechatSession[]>;
+      getWeFlowConfig: () => Promise<WeFlowConfigDto>;
+      saveWeFlowConfig: (input: unknown) => Promise<WeFlowConfigDto>;
+      testWeFlowConnection: () => Promise<WeFlowConnectionResult>;
+      listWeFlowSessions: () => Promise<WechatSession[]>;
+      getOrderDashboard: () => Promise<{ candidates: DealCandidate[]; orders: OrderRecord[]; summary: RevenueSummary }>;
+      analyzeOrders: () => Promise<{ candidates: DealCandidate[]; orders: OrderRecord[]; summary: RevenueSummary }>;
+      confirmOrderCandidate: (id: string, input: { projectName: string; customerName: string; confirmedAt: number; amount: number | null }) => Promise<OrderRecord>;
+      addOrderTransaction: (id: string, input: { type: 'initial' | 'follow-up' | 'refund'; amount: number; occurredAt: number; note: string; evidenceMessageIds: string[] }) => Promise<OrderRecord>;
+      addOrderMaintenance: (id: string, input: { occurredAt: number; content: string; nextFollowUpAt: number | null }) => Promise<OrderRecord>;
+      subscribeOrderChanges: (listener: () => void) => () => void;
     };
   }
 }

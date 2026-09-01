@@ -16,6 +16,9 @@ import type {
   DevelopmentSessionDetail,
 } from './development/development-types.js';
 import type { AiConfigDto, AiConnectionResult, AiSaveConfigInput } from './ai/ai-types.js';
+import type { DealCandidate, OrderRecord, RevenueSummary } from './orders/order-types.js';
+import type { WechatConfigDto, WechatConnectionResult, WechatSession } from './wechat/wechat-types.js';
+import type { WeFlowConfigDto, WeFlowConnectionResult } from './weflow/weflow-types.js';
 
 // 中文注释：Electron 会把主进程抛出的错误包装成
 // "Error invoking remote method '<通道>': Error: <消息>"，这里还原成只含中文消息的
@@ -55,6 +58,7 @@ contextBridge.exposeInMainWorld('desktopApi', {
     invoke('project:update', { id, status }),
   openProjectPath: (id: string): Promise<void> => invoke('project:open-path', id),
   selectDirectory: (): Promise<string | null> => invoke('dialog:select-directory'),
+  selectFile: (): Promise<string | null> => invoke('dialog:select-file'),
 
   // 模板管理
   getTemplate: (): Promise<Template | null> => invoke('template:get'),
@@ -79,4 +83,22 @@ contextBridge.exposeInMainWorld('desktopApi', {
   getAiConfig: (): Promise<AiConfigDto> => invoke('ai:get-config'),
   saveAiConfig: (input: AiSaveConfigInput): Promise<AiConfigDto> => invoke('ai:save-config', input),
   testAiConnection: (): Promise<AiConnectionResult> => invoke('ai:test-connection'),
+  getWechatConfig: (): Promise<WechatConfigDto> => invoke('wechat:get-config'),
+  saveWechatConfig: (input: unknown): Promise<WechatConfigDto> => invoke('wechat:save-config', input),
+  testWechatConnection: (): Promise<WechatConnectionResult> => invoke('wechat:test-connection'),
+  listWechatSessions: (): Promise<WechatSession[]> => invoke('wechat:list-sessions'),
+  getWeFlowConfig: (): Promise<WeFlowConfigDto> => invoke('weflow:get-config'),
+  saveWeFlowConfig: (input: unknown): Promise<WeFlowConfigDto> => invoke('weflow:save-config', input),
+  testWeFlowConnection: (): Promise<WeFlowConnectionResult> => invoke('weflow:test-connection'),
+  listWeFlowSessions: (): Promise<WechatSession[]> => invoke('weflow:list-sessions'),
+  getOrderDashboard: (): Promise<{ candidates: DealCandidate[]; orders: OrderRecord[]; summary: RevenueSummary }> => invoke('order:get-dashboard'),
+  analyzeOrders: (): Promise<{ candidates: DealCandidate[]; orders: OrderRecord[]; summary: RevenueSummary }> => invoke('order:analyze'),
+  confirmOrderCandidate: (id: string, input: { projectName: string; customerName: string; confirmedAt: number; amount: number | null }): Promise<OrderRecord> => invoke('order:confirm-candidate', id, input),
+  addOrderTransaction: (id: string, input: { type: 'initial' | 'follow-up' | 'refund'; amount: number; occurredAt: number; note: string; evidenceMessageIds: string[] }): Promise<OrderRecord> => invoke('order:add-transaction', id, input),
+  addOrderMaintenance: (id: string, input: { occurredAt: number; content: string; nextFollowUpAt: number | null }): Promise<OrderRecord> => invoke('order:add-maintenance', id, input),
+  subscribeOrderChanges: (listener: () => void): (() => void) => {
+    const handler = () => listener();
+    ipcRenderer.on('order:changed', handler);
+    return () => ipcRenderer.off('order:changed', handler);
+  },
 });

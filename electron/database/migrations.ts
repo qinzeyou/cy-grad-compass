@@ -39,6 +39,31 @@ const MIGRATIONS: string[] = [
     created_at TEXT NOT NULL,
     FOREIGN KEY (session_id) REFERENCES development_sessions(id)
   );`,
+  `CREATE TABLE IF NOT EXISTS deal_candidates (
+    id TEXT PRIMARY KEY,
+    session_id TEXT NOT NULL,
+    session_name TEXT NOT NULL,
+    customer_name TEXT NOT NULL,
+    project_name TEXT NOT NULL,
+    confidence REAL NOT NULL,
+    amount REAL,
+    deal_time INTEGER,
+    evidence_json TEXT NOT NULL,
+    matched_folder_json TEXT,
+    status TEXT NOT NULL CHECK (status IN ('candidate', 'confirmed', 'ignored')),
+    created_at TEXT NOT NULL
+  );`,
+  `CREATE TABLE IF NOT EXISTS orders (
+    id TEXT PRIMARY KEY,
+    customer_name TEXT NOT NULL,
+    session_id TEXT NOT NULL,
+    project_name TEXT NOT NULL,
+    folder_path TEXT,
+    confirmed_at INTEGER NOT NULL,
+    transactions_json TEXT NOT NULL,
+    maintenance_json TEXT NOT NULL,
+    evidence_json TEXT NOT NULL
+  );`,
 ];
 
 // 中文注释：按顺序执行迁移，幂等设计保证重复启动不会报错。
