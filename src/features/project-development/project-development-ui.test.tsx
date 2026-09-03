@@ -33,7 +33,10 @@ describe('project development layout', () => {
     expect(chat.container.querySelector('.development-chat-head h5')?.textContent).toBe('需求讨论');
     expect(chat.container.querySelector('.composer-input-shell')).not.toBeNull();
     expect(chat.container.querySelector('.composer-footer')).not.toBeNull();
-    expect(chat.container.querySelector('.composer-add')).not.toBeNull();
+    expect(chat.container.querySelector('.composer-add')).toBeNull();
+    expect(chat.container.querySelector('.composer-access')).toBeNull();
+    expect(chat.container.querySelector('.composer-model')).toBeNull();
+    expect(chat.getByRole('button', { name: /确认开发/ })).toBeTruthy();
     expect(chat.container.querySelector('.composer-send')).not.toBeNull();
     expect(chat.container.querySelector('.composer-shortcuts')).toBeNull();
   });

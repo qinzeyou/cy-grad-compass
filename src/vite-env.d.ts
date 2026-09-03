@@ -25,6 +25,7 @@ import type {
 import type { DealCandidate, OrderRecord, RevenueSummary } from './features/order-analysis/order-types';
 import type { WechatConfigDto, WechatConnectionResult, WechatSession } from './features/settings/wechat-types';
 import type { WeFlowConfigDto, WeFlowConnectionResult } from '../electron/weflow/weflow-types';
+import type { SkillDetail, SkillFeature, SkillFeatureDetail, SkillSummary } from '../electron/skills/skill-types';
 
 declare global {
   interface Window {
@@ -50,12 +51,20 @@ declare global {
       listDevelopmentSessions: () => Promise<DevelopmentSession[]>;
       getDevelopmentSession: (id: string) => Promise<DevelopmentSessionDetail>;
       createDevelopmentSession: (projectId: string) => Promise<DevelopmentSessionDetail>;
-      sendDevelopmentMessage: (sessionId: string, message: string) => Promise<void>;
-      startDevelopment: (sessionId: string) => Promise<void>;
+      sendDevelopmentMessage: (sessionId: string, message: string, mode?: 'discussion' | 'development', skillId?: string) => Promise<void>;
+      startDevelopment: (sessionId: string, skillId?: string) => Promise<void>;
       continueDevelopment: (sessionId: string) => Promise<void>;
       pauseDevelopment: (sessionId: string) => Promise<void>;
       stopDevelopment: (sessionId: string) => Promise<void>;
       deleteDevelopmentSession: (sessionId: string) => Promise<void>;
+      listSkills: () => Promise<SkillSummary[]>;
+      listSkillFeatures: () => Promise<SkillFeature[]>;
+      getSkill: (id: string) => Promise<SkillDetail>;
+      getSkillFeature: (id: string) => Promise<SkillFeatureDetail>;
+      importSkill: (sourcePath: string) => Promise<SkillSummary>;
+      extractSkill: (input: { name: string; description?: string; instructions: string }) => Promise<SkillSummary>;
+      deleteSkill: (id: string) => Promise<void>;
+      deleteSkillFeature: (id: string) => Promise<void>;
       subscribeDevelopmentEvents: (listener: (envelope: DevelopmentEventEnvelope) => void) => () => void;
       getAiConfig: () => Promise<AiConfigDto>;
       saveAiConfig: (input: AiSaveConfigInput) => Promise<AiConfigDto>;

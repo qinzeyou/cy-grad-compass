@@ -89,22 +89,52 @@ describe('应用外壳', () => {
   });
 
   it('成单详情使用弹窗并支持确认未成单', async () => {
-    const candidate = { id: 'c1', sessionId: 's1', sessionName: '客户', customerName: '客户', nickname: '微信名称', avatarUrl: '/avatar.png', projectName: '项目', confidence: 0.9, amount: 800, dealTime: 1, evidence: [{ id: 'm1', sessionId: 's1', sessionName: '客户', senderName: '客户', isSelf: false, sentAt: 1, text: '成交证据' }], matchedFolder: null, status: 'candidate' as const };
+    const candidate = { id: 'c1', sessionId: 's1', sessionName: '客户', customerName: 'wxid-user', nickname: '微信名称', remarkName: '鱼02-28_美妆预约', avatarUrl: '/avatar.png', projectName: '项目', confidence: 0.9, amount: 800, dealTime: 1, evidence: [{ id: 'm1', sessionId: 's1', sessionName: '客户', senderName: '客户', isSelf: false, sentAt: 1, text: '成交证据' }], matchedFolder: null, status: 'candidate' as const };
     const api = installDesktopApiMock({ getOrderDashboard: vi.fn(async () => ({ candidates: [candidate], orders: [], summary: { gross: 0, refunds: 0, net: 0, orderCount: 0, pendingCandidateCount: 1 } })) });
     render(<App />);
     fireEvent.click(await screen.findByRole('menuitem', { name: /成单分析/ }));
-    fireEvent.click(await screen.findByRole('button', { name: '查看成单线索：微信名称 · 项目' }));
+    expect(await screen.findByText('待确认')).toBeTruthy();
+    expect(screen.getByText('订单')).toBeTruthy();
+    expect(document.querySelector('.order-candidates-card .ant-avatar img')?.getAttribute('src')).toBe('/avatar.png');
+    fireEvent.click(await screen.findByRole('button', { name: '查看成单线索：鱼02-28_美妆预约 · 项目' }));
     expect(document.querySelector('.ant-drawer')).toBeNull();
     expect(await screen.findByRole('dialog')).toBeTruthy();
-    expect(within(await screen.findByRole('dialog')).getByText('微信名称')).toBeTruthy();
+    expect(within(await screen.findByRole('dialog')).getByText('鱼02-28_美妆预约')).toBeTruthy();
+    expect(document.querySelector('.candidate-modal-actions')).toBeTruthy();
     expect(screen.queryByText('s1')).toBeNull();
     expect(screen.queryByText('成交证据')).toBeNull();
-    fireEvent.click(screen.getByText('成单聊天记录（1 条）'));
+    fireEvent.click(screen.getByRole('button', { name: /成交聊天记录（1 条）/ }));
     expect(await screen.findByText('成交证据')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: '确认未成单' }));
+    fireEvent.click(screen.getByRole('button', { name: '未成单' }));
     await screen.findAllByText('确认未成单？');
-    fireEvent.click(screen.getAllByRole('button', { name: '确认未成单' })[1]);
+    fireEvent.click(screen.getByRole('button', { name: '确认未成单' }));
     await waitFor(() => expect(api.ignoreOrderCandidate).toHaveBeenCalledWith('c1'));
+  });
+
+  it('成单详情展示成交摘要，并支持折叠聊天与按时间倒序', async () => {
+    const candidate = { id: 'c1', sessionId: 's1', sessionName: '客户', customerName: '客户', nickname: '客户昵称', remarkName: '客户备注', avatarUrl: '/avatar.png', projectName: '商业计划书排版', confidence: 0.9, amount: 50, dealTime: 2, evidence: [
+      { id: 'm1', sessionId: 's1', sessionName: '客户', senderName: '客户', isSelf: false, sentAt: 1, text: '较早消息' },
+      { id: 'm2', sessionId: 's1', sessionName: '客户', senderName: '我', isSelf: true, sentAt: 2, text: '本人消息' },
+    ], matchedFolder: null, status: 'candidate' as const };
+    installDesktopApiMock({ getOrderDashboard: vi.fn(async () => ({ candidates: [candidate], orders: [], summary: { gross: 0, refunds: 0, net: 0, orderCount: 0, pendingCandidateCount: 1 } })) });
+    render(<App />);
+    fireEvent.click(await screen.findByRole('menuitem', { name: /成单分析/ }));
+    fireEvent.click(await screen.findByRole('button', { name: '查看成单线索：客户备注 · 商业计划书排版' }));
+
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog.querySelector('.candidate-summary-card')).toBeTruthy();
+    expect(within(dialog).getByText('匹配项目')).toBeTruthy();
+    expect(within(dialog).getByText('预计金额')).toBeTruthy();
+    expect(within(dialog).getByText('成交判断置信度')).toBeTruthy();
+    expect(within(dialog).queryByText('较早消息')).toBeNull();
+
+    fireEvent.click(within(dialog).getByRole('button', { name: /成交聊天记录（2 条）/ }));
+    expect(await within(dialog).findByText('本人消息')).toBeTruthy();
+    expect(dialog.querySelector('.candidate-chat-message.is-self')).toBeTruthy();
+    fireEvent.click(within(dialog).getByRole('button', { name: '按时间排序' }));
+    fireEvent.click(await screen.findByText('时间倒序'));
+    const messages = Array.from(dialog.querySelectorAll('.candidate-chat-message')).map((item) => item.textContent);
+    expect(messages[0]).toContain('本人消息');
   });
 
   it('待确认成单可在弹窗中删除', async () => {
@@ -124,7 +154,7 @@ describe('应用外壳', () => {
     installDesktopApiMock({ getOrderDashboard: vi.fn(async () => ({ candidates: [], orders: [order], summary: { gross: 800, refunds: 0, net: 800, orderCount: 1, pendingCandidateCount: 0 } })) });
     render(<App />);
     fireEvent.click(await screen.findByRole('menuitem', { name: /成单分析/ }));
-    await screen.findByText('订单台账');
+    await screen.findByText('订单');
     expect(screen.getByText('鱼02-28_美妆预约')).toBeTruthy();
     expect(screen.getByText('昵称：微信名称')).toBeTruthy();
     expect(screen.queryByText('wxid-user')).toBeNull();
@@ -140,7 +170,7 @@ describe('应用外壳', () => {
     installDesktopApiMock({ getOrderDashboard: vi.fn(async () => ({ candidates: [], orders, summary: { gross: 800, refunds: 0, net: 800, orderCount: 2, pendingCandidateCount: 0 } })) });
     render(<App />);
     fireEvent.click(await screen.findByRole('menuitem', { name: /成单分析/ }));
-    await screen.findByText('订单台账');
+    await screen.findByText('订单');
     const cells = Array.from(document.querySelectorAll('.order-table-card .ant-table-tbody tr td:first-child')).map((item) => item.textContent?.trim());
     expect(cells[0]).toContain('客户');
     expect(cells[1]).toContain('客户2');

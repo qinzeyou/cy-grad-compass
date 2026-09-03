@@ -5,7 +5,7 @@ import { readAiConfig } from '../ai/config-repository.js';
 import type { AppDatabase } from '../database/connection.js';
 import { canConnectWechat, readWechatConfig } from '../wechat/wechat-config.js';
 import { wechatService } from '../wechat/wechat-service.js';
-import { analyzeDealsDetailed, dedupeCandidates, dedupeCandidatesWithIds } from './deal-analyzer.js';
+import { analyzeDealsDetailed, dedupeCandidates, dedupeCandidatesWithIds, isUsableCandidate } from './deal-analyzer.js';
 import { formatFolderName, matchesRemarkPrefix, nextAvailableFolderName, renderFolderTemplate } from './order-utils.js';
 import { scanProjectFolders } from './folder-scanner.js';
 import { OrderRepository } from './order-repository.js';
@@ -104,6 +104,10 @@ export class OrderService {
       if (messages.length === 0) { recordAnalysisStep(debug, 'decision', `${session.name} 跳过：没有可分析的文本消息`, { sessionId: session.id }); onProgress?.(this.dashboard()); continue; }
       const analysis = await analyzeDealsDetailed(messages, folders, aiConfig);
       for (const candidate of analysis.candidates) {
+        if (!isUsableCandidate(candidate)) {
+          recordAnalysisStep(debug, 'decision', `${session.name} 跳过无效成交记录`, { sessionId: session.id, candidateId: candidate.id, reason: '缺少会话、客户或聊天证据' });
+          continue;
+        }
         const matchedFolder = candidate.matchedFolder || folders.find((item) => item.name.includes(candidate.projectName)) || null;
         const nextCandidate = { ...candidate, matchedFolder, userId: session.id, nickname: session.nickname || session.name, remarkName: session.remarkName, avatarUrl: session.avatarUrl };
         const duplicates = this.repository.listCandidates(200).filter((item) => dedupeCandidates([item, nextCandidate]).length === 1);
@@ -145,9 +149,11 @@ export class OrderService {
 
   dashboard(): DealDashboard {
     const storedCandidates = this.repository.listCandidates(1000);
-    const deduped = dedupeCandidatesWithIds(storedCandidates);
+    const invalidIds = storedCandidates.filter((candidate) => !isUsableCandidate(candidate)).map((candidate) => candidate.id);
+    for (const id of invalidIds) this.repository.deleteCandidate(id);
+    const deduped = dedupeCandidatesWithIds(storedCandidates.filter(isUsableCandidate));
     for (const id of deduped.duplicateIds) this.repository.deleteCandidate(id);
-    const candidates = deduped.candidates;
+    const candidates = deduped.candidates.sort((left, right) => (right.dealTime ?? -Infinity) - (left.dealTime ?? -Infinity));
     const orderMerge = mergeOrdersByCustomer(this.repository.listOrders());
     for (const id of orderMerge.duplicateIds) this.repository.deleteOrder(id);
     for (const order of orderMerge.orders) this.repository.updateOrder(order);
@@ -176,7 +182,7 @@ export class OrderService {
       folderPath = join(yearDir, nextAvailableFolderName(baseName || formatFolderName(date, input.projectName), names));
       await mkdir(folderPath, { recursive: false });
     }
-    const order: OrderRecord = { id: randomUUID(), customerName: input.customerName.trim() || candidate.customerName, nickname: candidate.nickname, remarkName: candidate.remarkName, avatarUrl: candidate.avatarUrl, sessionId: candidate.sessionId,
+    const order: OrderRecord = { id: randomUUID(), customerName: input.customerName.trim() || candidate.remarkName || candidate.nickname || candidate.customerName, nickname: candidate.nickname, remarkName: candidate.remarkName, avatarUrl: candidate.avatarUrl, sessionId: candidate.sessionId,
       projectName: input.projectName.trim() || candidate.projectName, folderPath, confirmedAt: input.confirmedAt, transactions: [], maintenance: [], evidence: candidate.evidence };
     if (input.amount !== null && input.amount > 0) order.transactions.push({ id: randomUUID(), type: 'initial', amount: input.amount, occurredAt: input.confirmedAt, note: '首单', evidenceMessageIds: candidate.evidence.map((item) => item.id) });
     return this.repository.confirmCandidate(candidateId, order);

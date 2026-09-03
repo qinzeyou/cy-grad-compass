@@ -1,6 +1,5 @@
 // 中文注释：设置页。当前只提供 AI 服务配置卡片，后续可扩展其他设置区块。
 import type { ReactElement } from 'react';
-import { Typography } from 'antd';
 import { AiSettingsPanel } from './ai-settings-panel';
 import { WechatSettingsPanel } from './wechat-settings-panel';
 
@@ -9,11 +8,6 @@ interface SettingsPageProps { section: 'ai' | 'wechat'; }
 export function SettingsPage({ section }: SettingsPageProps): ReactElement {
   return (
     <div className="settings-layout settings-layout-centered">
-      <div className="settings-heading">
-        <Typography.Text className="eyebrow">SETTINGS</Typography.Text>
-        <Typography.Title level={3} style={{ margin: '6px 0 0' }}>设置</Typography.Title>
-        <Typography.Text type="secondary">配置 DeepSeek 与微信数据源并验证连通性</Typography.Text>
-      </div>
       {section === 'ai' ? <AiSettingsPanel /> : <WechatSettingsPanel />}
     </div>
   );

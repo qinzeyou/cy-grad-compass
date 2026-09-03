@@ -13,6 +13,8 @@ import { CodexController } from './development/codex-controller.js';
 import { DevelopmentRepository } from './development/development-repository.js';
 import { DevelopmentService } from './development/development-service.js';
 import { registerDevelopmentIpcHandlers, sendDevelopmentEvent } from './development/development-handlers.js';
+import { SkillService } from './skills/skill-service.js';
+import { registerSkillIpcHandlers } from './skills/skill-handlers.js';
 import { registerWechatIpcHandlers } from './ipc/wechat-handlers.js';
 import { registerOrderIpcHandlers } from './ipc/order-handlers.js';
 import { registerWeFlowIpcHandlers } from './ipc/weflow-handlers.js';
@@ -96,17 +98,20 @@ app.whenReady().then(async () => {
   const projectService = new ProjectService(projectRepository, templateRepository);
   const templateService = new TemplateService(templateRepository, templatesDir);
   const developmentRepository = new DevelopmentRepository(database);
+  const skillService = new SkillService(app.getPath('userData'));
   const codexController = new CodexController();
   developmentService = new DevelopmentService(
     projectRepository,
     developmentRepository,
     codexController,
     (sessionId, event) => sendDevelopmentEvent(mainWindow?.webContents ?? null, sessionId, event),
+    skillService,
   );
 
   registerProjectIpcHandlers(projectService);
   registerTemplateIpcHandlers(templateService);
   registerDevelopmentIpcHandlers(developmentService);
+  registerSkillIpcHandlers(skillService);
   orderService = registerOrderIpcHandlers(database, app.getPath('userData'));
   registerWechatIpcHandlers({ getUserDataPath: () => app.getPath('userData'), onConfigChanged: restoreWechatRuntime });
   registerWeFlowIpcHandlers({ getUserDataPath: () => app.getPath('userData'), onConfigChanged: restoreWechatRuntime });

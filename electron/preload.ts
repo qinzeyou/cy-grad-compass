@@ -19,6 +19,7 @@ import type { AiConfigDto, AiConnectionResult, AiSaveConfigInput } from './ai/ai
 import type { DealCandidate, OrderRecord, RevenueSummary } from './orders/order-types.js';
 import type { WechatConfigDto, WechatConnectionResult, WechatSession } from './wechat/wechat-types.js';
 import type { WeFlowConfigDto, WeFlowConnectionResult } from './weflow/weflow-types.js';
+import type { SkillDetail, SkillFeature, SkillFeatureDetail, SkillSummary } from './skills/skill-types.js';
 
 // 中文注释：Electron 会把主进程抛出的错误包装成
 // "Error invoking remote method '<通道>': Error: <消息>"，这里还原成只含中文消息的
@@ -69,12 +70,20 @@ contextBridge.exposeInMainWorld('desktopApi', {
   listDevelopmentSessions: (): Promise<DevelopmentSession[]> => invoke('development:list-sessions'),
   getDevelopmentSession: (id: string): Promise<DevelopmentSessionDetail> => invoke('development:get-session', id),
   createDevelopmentSession: (projectId: string): Promise<DevelopmentSessionDetail> => invoke('development:create-session', projectId),
-  sendDevelopmentMessage: (sessionId: string, message: string): Promise<void> => invoke('development:send-message', sessionId, message),
-  startDevelopment: (sessionId: string): Promise<void> => invoke('development:start', sessionId),
+  sendDevelopmentMessage: (sessionId: string, message: string, mode?: 'discussion' | 'development', skillId?: string): Promise<void> => invoke('development:send-message', sessionId, message, mode, skillId),
+  startDevelopment: (sessionId: string, skillId?: string): Promise<void> => invoke('development:start', sessionId, skillId),
   continueDevelopment: (sessionId: string): Promise<void> => invoke('development:continue', sessionId),
   pauseDevelopment: (sessionId: string): Promise<void> => invoke('development:pause', sessionId),
   stopDevelopment: (sessionId: string): Promise<void> => invoke('development:stop', sessionId),
   deleteDevelopmentSession: (sessionId: string): Promise<void> => invoke('development:delete-session', sessionId),
+  listSkills: (): Promise<SkillSummary[]> => invoke('skill:list'),
+  listSkillFeatures: (): Promise<SkillFeature[]> => invoke('skill:list-features'),
+  getSkill: (id: string): Promise<SkillDetail> => invoke('skill:get', id),
+  getSkillFeature: (id: string): Promise<SkillFeatureDetail> => invoke('skill:get-feature', id),
+  importSkill: (sourcePath: string): Promise<SkillSummary> => invoke('skill:import', sourcePath),
+  extractSkill: (input: { name: string; description?: string; instructions: string }): Promise<SkillSummary> => invoke('skill:extract', input),
+  deleteSkill: (id: string): Promise<void> => invoke('skill:delete', id),
+  deleteSkillFeature: (id: string): Promise<void> => invoke('skill:delete-feature', id),
   subscribeDevelopmentEvents: (listener: (envelope: DevelopmentEventEnvelope) => void): (() => void) => {
     const handler = (_event: Electron.IpcRendererEvent, envelope: DevelopmentEventEnvelope) => listener(envelope);
     ipcRenderer.on('development:event', handler);

@@ -17,7 +17,7 @@ export class OrderRepository {
   constructor(private readonly database: DatabaseSync) {}
 
   listCandidates(limit = 50): DealCandidate[] {
-    const rows = this.database.prepare('SELECT * FROM deal_candidates WHERE status = ? ORDER BY created_at DESC LIMIT ?').all('candidate', limit) as unknown as CandidateRow[];
+    const rows = this.database.prepare('SELECT * FROM deal_candidates WHERE status = ? ORDER BY deal_time DESC, created_at DESC LIMIT ?').all('candidate', limit) as unknown as CandidateRow[];
     return rows.map((row) => ({
       id: row.id, sessionId: row.session_id, sessionName: row.session_name, customerName: row.customer_name,
       projectName: row.project_name, confidence: row.confidence, amount: row.amount, dealTime: row.deal_time,

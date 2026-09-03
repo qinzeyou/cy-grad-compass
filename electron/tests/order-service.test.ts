@@ -59,6 +59,25 @@ test('读取看板时清理重复待成单记录', async () => {
   }
 });
 
+test('读取看板时清理没有会话和聊天证据的未知客户候选，并按成交时间倒序', async () => {
+  const dir = await mkdtemp(join(process.env.TEMP || 'C:/Windows/Temp', 'order-service-'));
+  const database = openDatabase(join(dir, 'test.db'));
+  try {
+    const insert = database.prepare(`INSERT INTO deal_candidates (id, session_id, session_name, customer_name, project_name, confidence, amount, deal_time, evidence_json, matched_folder_json, status, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+    insert.run('invalid', '', '', '未知客户', '项目', 0.9, null, null, '[]', null, 'candidate', new Date().toISOString());
+    const evidence = (id: string, sentAt: number) => JSON.stringify([{ id, sessionId: 's1', sessionName: '客户', senderName: '客户', isSelf: false, text: '已付款', sentAt }]);
+    insert.run('newer', 's1', '客户', '客户', '项目', 0.9, 100, 200, evidence('m2', 200), null, 'candidate', new Date().toISOString());
+    insert.run('older', 's2', '客户2', '客户2', '项目', 0.9, 100, 100, evidence('m1', 100), null, 'candidate', new Date().toISOString());
+    const service = new OrderService(database, dir);
+    assert.deepEqual(service.dashboard().candidates.map((candidate) => candidate.id), ['newer', 'older']);
+    assert.equal((database.prepare("SELECT COUNT(*) AS count FROM deal_candidates WHERE status='candidate'").get() as { count: number }).count, 2);
+  } finally {
+    closeDatabase(database);
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
 test('分析失败时仍保留已结束的调试记录', async () => {
   const dir = await mkdtemp(join(process.env.TEMP || 'C:/Windows/Temp', 'order-service-'));
   const database = openDatabase(join(dir, 'test.db'));
@@ -96,7 +115,7 @@ test('确认成单可以关联已有文件夹或不创建文件夹', async () =>
   }
 });
 
-test('确认成单保留微信昵称和头像供订单台账展示', async () => {
+test('确认成单保留微信备注、昵称和头像供订单台账展示', async () => {
   const dir = await mkdtemp(join(process.env.TEMP || 'C:/Windows/Temp', 'order-service-'));
   const database = openDatabase(join(dir, 'test.db'));
   const projectsRoot = join(dir, 'projects');
@@ -105,7 +124,8 @@ test('确认成单保留微信昵称和头像供订单台账展示', async () =>
     const service = new OrderService(database, dir);
     database.prepare(`INSERT INTO deal_candidates (id, session_id, session_name, customer_name, project_name, confidence, amount, deal_time, evidence_json, matched_folder_json, status, created_at, nickname, remark_name, avatar_url)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run('candidate-contact', 's1', '客户', 'wxid-user', '项目', 0.9, 800, 1, '[]', null, 'candidate', new Date().toISOString(), '微信名称', '鱼02-28_美妆预约', '/avatar.png');
-    const order = await service.confirmCandidate('candidate-contact', { projectName: '项目', customerName: '客户', confirmedAt: 1, amount: 800, folderMode: 'none' });
+    const order = await service.confirmCandidate('candidate-contact', { projectName: '项目', customerName: '', confirmedAt: 1, amount: 800, folderMode: 'none' });
+    assert.equal(order.customerName, '鱼02-28_美妆预约');
     assert.equal((order as unknown as { nickname?: string }).nickname, '微信名称');
     assert.equal((order as unknown as { remarkName?: string }).remarkName, '鱼02-28_美妆预约');
     assert.equal((order as unknown as { avatarUrl?: string }).avatarUrl, '/avatar.png');

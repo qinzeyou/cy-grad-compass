@@ -14,6 +14,10 @@ export interface DealAnalysisResult {
   diagnostics: DealAnalysisDiagnostics;
 }
 
+export function isUsableCandidate(candidate: DealCandidate): boolean {
+  return Boolean(candidate.sessionId && candidate.evidence.length > 0 && candidate.customerName.trim() && candidate.customerName !== '未知客户');
+}
+
 function candidateId(sessionId: string, messages: WechatMessage[]): string {
   return createHash('sha1').update(`${sessionId}:${messages.at(-1)?.id ?? Date.now()}`).digest('hex').slice(0, 20);
 }
@@ -88,7 +92,7 @@ function heuristicMany(messages: WechatMessage[], folders: ProjectFolder[]): Dea
     candidate.evidence = context;
     result.push(candidate);
   }
-  return dedupeCandidates(result);
+  return dedupeCandidates(result).filter(isUsableCandidate);
 }
 
 function parseAiJson(raw: string): { deals?: Array<{ projectName?: string; amount?: number | null; confidence?: number; dealTime?: number | null; messageIds?: string[] }> } {
@@ -125,7 +129,7 @@ export async function analyzeDealsDetailed(messages: WechatMessage[], folders: P
           confidence: Math.max(0, Math.min(1, Number(deal.confidence) || 0.5)), dealTime: deal.dealTime ?? source.at(-1)?.sentAt ?? null, evidence: source, matchedFolder: null, status: 'candidate' as const };
       }));
     }
-    return { candidates: dedupeCandidates(results), diagnostics: { mode: 'deepseek', batchCount: batches.length, aiDealCount: results.length } };
+    return { candidates: dedupeCandidates(results).filter(isUsableCandidate), diagnostics: { mode: 'deepseek', batchCount: batches.length, aiDealCount: results.length } };
   } catch (error) {
     return { candidates: heuristicMany(messages, folders), diagnostics: { mode: 'heuristic-fallback', batchCount: batches.length, aiDealCount: results.length, fallbackReason: error instanceof Error ? error.message : 'DeepSeek 分析异常' } };
   }

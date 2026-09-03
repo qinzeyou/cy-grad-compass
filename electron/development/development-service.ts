@@ -9,6 +9,7 @@ import type {
   DevelopmentSession,
   DevelopmentSessionDetail,
 } from './development-types.js';
+import type { SkillService } from '../skills/skill-service.js';
 
 const DEVELOPMENT_PROMPT = '需求已经确认。请先检查当前工作区：如果是空项目或模板项目，就从 0 到 1 建立所需结构；如果已有代码，则在现有实现基础上增量修改或添加功能。遵循项目现有规范，完成后运行必要检查并汇报结果。';
 const CONTINUE_PROMPT = '请继续完成当前项目开发任务。先检查当前工作区和已有改动，从上次中断的位置继续，保留已完成内容，不要覆盖无关代码，完成后运行必要检查并汇报结果。';
@@ -29,6 +30,7 @@ function cleanMessage(text: string): string {
 }
 
 type ControllerLike = Pick<CodexController, 'run' | 'stop' | 'subscribe'>;
+export type DevelopmentMode = 'discussion' | 'development';
 
 // 中文注释：服务层是项目、数据库和 Codex 之间的唯一业务边界，渲染进程不直接操作它们。
 export class DevelopmentService {
@@ -41,6 +43,7 @@ export class DevelopmentService {
     private readonly developmentRepository: DevelopmentRepository,
     private readonly controller: ControllerLike,
     private readonly publish: (sessionId: string, event: DevelopmentEvent) => void,
+    private readonly skillService?: SkillService,
   ) {
     this.unsubscribeController = controller.subscribe((event) => this.handleEvent(event));
   }
@@ -68,7 +71,7 @@ export class DevelopmentService {
     return this.getSessionByProjectAndTime(projectId, timestamp);
   }
 
-  async sendMessage(sessionId: string, text: string): Promise<void> {
+  async sendMessage(sessionId: string, text: string, mode?: DevelopmentMode, skillId?: string): Promise<void> {
     const session = this.getSession(sessionId);
     const content = cleanMessage(text);
     if (this.activeSessionId !== null) throw new Error('已有 AI 任务正在运行');
@@ -77,17 +80,21 @@ export class DevelopmentService {
     this.developmentRepository.addMessage(message);
     if (session.messages.length === 0) this.developmentRepository.updateTitle(sessionId, content.slice(0, 22), timestamp);
     ensureProjectDirectory(this.projectPath(session.projectId));
-    const request: CodexRunRequest = { projectPath: this.projectPath(session.projectId), prompt: content, sandbox: session.phase === 'discussion' ? 'read-only' : 'workspace-write', ...(session.codexThreadId === null ? {} : { threadId: session.codexThreadId }) };
+    // 中文注释：下拉模式只影响当前消息意图；真正的写权限必须由“确认开发”切换会话阶段，避免误触直接改文件。
+    const selectedMode = session.phase === 'development' ? 'development' : 'discussion';
+    const skillPrompt = skillId === undefined ? '' : `\n\n请参考技能“${this.skillService?.get(skillId).name ?? ''}”：\n${this.skillService?.get(skillId).instructions ?? ''}`;
+    const request: CodexRunRequest = { projectPath: this.projectPath(session.projectId), prompt: `[当前模式：${selectedMode}]\n${content}${skillPrompt}`, sandbox: selectedMode === 'discussion' ? 'read-only' : 'workspace-write', ...(session.codexThreadId === null ? {} : { threadId: session.codexThreadId }) };
     await this.run(sessionId, request);
   }
 
-  async startDevelopment(sessionId: string): Promise<void> {
+  async startDevelopment(sessionId: string, skillId?: string): Promise<void> {
     const session = this.getSession(sessionId);
     if (session.codexThreadId === null) throw new Error('请先与 AI 讨论需求');
     if (this.activeSessionId !== null) throw new Error('已有 AI 任务正在运行');
     ensureProjectDirectory(this.projectPath(session.projectId));
     this.pendingDevelopmentSessionId = sessionId;
-    await this.run(sessionId, { projectPath: this.projectPath(session.projectId), threadId: session.codexThreadId, prompt: DEVELOPMENT_PROMPT, sandbox: 'workspace-write' });
+    const skillPrompt = skillId === undefined ? '' : `\n\n请参考技能“${this.skillService?.get(skillId).name ?? ''}”：\n${this.skillService?.get(skillId).instructions ?? ''}`;
+    await this.run(sessionId, { projectPath: this.projectPath(session.projectId), threadId: session.codexThreadId, prompt: DEVELOPMENT_PROMPT + skillPrompt, sandbox: 'workspace-write' });
   }
 
   async continueDevelopment(sessionId: string): Promise<void> {

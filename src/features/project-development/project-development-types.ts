@@ -17,3 +17,6 @@ export type DevelopmentEvent =
   | { type: 'process-exited'; exitCode: number; stopped: boolean; paused?: boolean };
 export interface DevelopmentEventEnvelope { sessionId: string; event: DevelopmentEvent; }
 export interface DevelopmentRunView { status: DevelopmentRunStatus; startedAt: number | null; commandCount: number; changedPaths: string[]; currentAction: string; logs: Array<{ id: string; label: string; detail?: string }>; }
+export interface SkillSummary { id: string; name: string; description: string; source: 'imported' | 'extracted'; createdAt: string; updatedAt: string; }
+export interface SkillFeature { id: string; skillId: string; name: string; description: string; skillName: string; source: 'imported' | 'extracted'; updatedAt: string; }
+export interface SkillFeatureDetail extends SkillFeature { instructions: string; }

@@ -1,6 +1,54 @@
 .order-page-host { height:100%; min-height:0; }
 .order-analysis-page { display:flex; flex-direction:column; gap:12px; height:100%; min-height:0; overflow:hidden; }
 .candidate-profile { display:flex; align-items:center; gap:12px; }
+.candidate-detail-modal { max-width:calc(100vw - 32px); }
+.candidate-detail-modal .ant-modal-content { background:#F5F8FE; border-radius:14px; overflow:hidden; }
+.candidate-detail-modal .ant-modal-header { margin-bottom:0; padding:18px 20px 14px; background:#F5F8FE; }
+.candidate-detail-modal .ant-modal-title { color:#15233C; font-size:16px; font-weight:700; }
+.candidate-detail-modal .ant-modal-body { max-height:calc(100vh - 108px); overflow-y:auto; padding:0 14px 14px; }
+.candidate-detail-shell { display:grid; gap:18px; padding:20px; background:#FFF; border:1px solid #E7EEF9; border-radius:10px; box-shadow:0 8px 28px rgba(49, 95, 168, .06); }
+.candidate-detail-header { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; }
+.candidate-detail-profile { display:flex; align-items:center; gap:12px; min-width:0; }
+.candidate-detail-profile .ant-avatar { flex:0 0 auto; box-shadow:0 0 0 4px #F0F5FF; }
+.candidate-detail-profile .ant-typography { display:block; }
+.candidate-detail-profile h3.ant-typography { margin:0 0 4px; color:#16233A; font-size:20px; }
+.candidate-modal-actions { justify-content:flex-end; }
+.candidate-modal-actions .ant-btn { height:32px; padding-inline:12px; border-radius:6px; font-weight:600; }
+.candidate-project-label { display:inline-flex; align-items:center; justify-self:start; gap:7px; padding:6px 9px; color:#2563DB; background:#EEF4FF; border-radius:6px; font-size:13px; font-weight:600; }
+.candidate-summary-card { position:relative; display:grid; gap:16px; overflow:hidden; padding:18px 144px 18px 16px; background:#F9FBFF; border:1px solid #BED5FF; border-radius:9px; }
+.candidate-summary-project { display:flex; align-items:center; gap:10px; }
+.candidate-summary-project > span { display:grid; place-items:center; width:38px; height:38px; color:#2D6EEB; background:#E7F0FF; border-radius:7px; font-size:20px; }
+.candidate-summary-project h3.ant-typography { margin:0; color:#18253B; font-size:18px; }
+.candidate-summary-stats { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:14px; }
+.candidate-summary-stats > div { display:grid; gap:5px; min-width:0; padding-right:12px; border-right:1px dotted #B8C9E7; }
+.candidate-summary-stats > div:last-child { border-right:0; }
+.candidate-summary-stats .ant-typography { font-size:13px; }
+.candidate-summary-stats strong { color:#18253B; font-size:16px; font-weight:600; white-space:nowrap; }
+.candidate-summary-stats .candidate-summary-amount { color:#2563DB; }
+.candidate-summary-stats .candidate-summary-confidence { color:#05998A; font-size:21px; }
+.candidate-summary-art { position:absolute; right:24px; bottom:16px; width:84px; height:84px; color:#BCD4FF; transform:rotate(-12deg); }
+.candidate-summary-art .anticon:first-child { position:absolute; right:10px; top:2px; font-size:76px; opacity:.72; }
+.candidate-summary-art .anticon:last-child { position:absolute; right:0; bottom:2px; color:#4B86F7; font-size:32px; transform:rotate(12deg); }
+.candidate-chat-section { min-width:0; }
+.candidate-chat-toolbar { display:flex; align-items:flex-start; gap:10px; }
+.candidate-chat-collapse { flex:1 1 auto; min-width:0; background:transparent; }
+.candidate-chat-collapse > .ant-collapse-item { border-bottom:0; }
+.candidate-chat-collapse .ant-collapse-header { align-items:center; padding:6px 0 12px; color:#18253B; }
+.candidate-chat-title { display:inline-flex; align-items:center; gap:8px; font-size:16px; font-weight:650; }
+.candidate-chat-title .anticon { color:#2D6EEB; font-size:18px; }
+.candidate-chat-collapse .ant-collapse-content { background:transparent; border-top:0; }
+.candidate-chat-collapse .ant-collapse-content-box { padding:4px 0 0; }
+.candidate-chat-sort { margin-top:2px; color:#24334D; font-size:14px; }
+.candidate-chat-list { display:grid; gap:10px; }
+.candidate-chat-message { display:flex; align-items:flex-start; gap:10px; padding:12px; background:#FAFCFF; border:1px solid #E9F0FA; border-radius:8px; }
+.candidate-chat-message.is-self { background:#F3FCFA; border-color:#D7F1EB; }
+.candidate-chat-content { display:grid; gap:7px; min-width:0; }
+.candidate-chat-meta { display:flex; align-items:baseline; flex-wrap:wrap; gap:8px; }
+.candidate-chat-meta .ant-typography:first-child { color:#1C2A40; }
+.candidate-chat-meta .ant-typography:last-child { color:#94A2B7; font-size:13px; }
+.candidate-chat-message.is-self .candidate-chat-meta .ant-typography:first-child { color:#078B7D; }
+.candidate-chat-bubble { width:fit-content; max-width:min(560px, 100%); padding:8px 11px; color:#23334D; background:#FFF; border-radius:7px; box-shadow:0 3px 10px rgba(33, 66, 116, .04); white-space:pre-wrap; overflow-wrap:anywhere; }
+.candidate-chat-message.is-self .candidate-chat-bubble { color:#087D72; background:#FFF; }
 .order-metrics-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
 .order-metrics-grid .ant-card { border:0; box-shadow:none; background:#fff; }
 .order-metrics-grid .ant-card-body { display:grid; gap:10px; min-height:112px; }
@@ -38,3 +86,4 @@
 .evidence-timeline > div { padding:10px 12px; border-left:3px solid #D9E0EA; background:#F8FAFC; }
 .evidence-timeline p { margin:6px 0 0; white-space:pre-wrap; }
 @media (max-width:1100px) { .order-metrics-grid { grid-template-columns:repeat(2,1fr); }.order-analysis-grid { grid-template-columns:1fr; }.candidate-row { grid-template-columns:1fr auto; }.candidate-row small,.candidate-actions { grid-column:2; } }
+@media (max-width:760px) { .candidate-detail-modal { max-width:calc(100vw - 16px); }.candidate-detail-modal .ant-modal-header { padding:16px 16px 12px; }.candidate-detail-modal .ant-modal-title { max-width:calc(100% - 28px); font-size:16px; }.candidate-detail-modal .ant-modal-body { max-height:calc(100vh - 88px); padding:0 6px 6px; }.candidate-detail-shell { gap:16px; padding:16px; }.candidate-detail-header { flex-direction:column; gap:14px; }.candidate-detail-profile h3.ant-typography { font-size:19px; }.candidate-modal-actions { width:100%; justify-content:stretch; }.candidate-modal-actions .ant-space-item { flex:1; }.candidate-modal-actions .ant-btn { width:100%; height:30px; padding-inline:8px; }.candidate-summary-card { gap:16px; padding:16px; }.candidate-summary-project h3.ant-typography { font-size:18px; }.candidate-summary-stats { grid-template-columns:1fr; gap:12px; }.candidate-summary-stats > div { padding:0 0 10px; border-right:0; border-bottom:1px dotted #B8C9E7; }.candidate-summary-stats > div:last-child { padding-bottom:0; border-bottom:0; }.candidate-summary-art { display:none; }.candidate-chat-toolbar { gap:6px; }.candidate-chat-title { font-size:15px; }.candidate-chat-sort { padding-inline:4px; white-space:nowrap; }.candidate-chat-message { gap:8px; padding:10px; }.candidate-chat-meta { gap:6px; }.candidate-chat-bubble { max-width:100%; } }
