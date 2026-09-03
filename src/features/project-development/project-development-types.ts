@@ -1,5 +1,5 @@
 export type DevelopmentPhase = 'discussion' | 'development';
-export type DevelopmentRunStatus = 'idle' | 'running' | 'completed' | 'error' | 'stopped';
+export type DevelopmentRunStatus = 'idle' | 'running' | 'paused' | 'completed' | 'error' | 'stopped';
 
 export interface DevelopmentMessage { id: string; sessionId: string; role: 'user' | 'assistant'; content: string; createdAt: string; }
 export interface DevelopmentSession { id: string; projectId: string; projectName: string; title: string; codexThreadId: string | null; phase: DevelopmentPhase; createdAt: string; updatedAt: string; }
@@ -14,6 +14,6 @@ export type DevelopmentEvent =
   | { type: 'turn-completed' }
   | { type: 'run-error'; message: string }
   | { type: 'log'; text: string }
-  | { type: 'process-exited'; exitCode: number; stopped: boolean };
+  | { type: 'process-exited'; exitCode: number; stopped: boolean; paused?: boolean };
 export interface DevelopmentEventEnvelope { sessionId: string; event: DevelopmentEvent; }
 export interface DevelopmentRunView { status: DevelopmentRunStatus; startedAt: number | null; commandCount: number; changedPaths: string[]; currentAction: string; logs: Array<{ id: string; label: string; detail?: string }>; }

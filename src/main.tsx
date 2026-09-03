@@ -2,7 +2,10 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import './styles.css';
 import { App } from './app';
+import { ensureDesktopApi } from './desktop-api';
 import logoUrl from '../assets/logo.png';
+
+ensureDesktopApi();
 
 // 中文注释：复用同一张品牌图片作为页面 favicon，避免网页标签继续显示旧图标。
 const favicon = document.createElement('link');

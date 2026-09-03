@@ -71,6 +71,8 @@ contextBridge.exposeInMainWorld('desktopApi', {
   createDevelopmentSession: (projectId: string): Promise<DevelopmentSessionDetail> => invoke('development:create-session', projectId),
   sendDevelopmentMessage: (sessionId: string, message: string): Promise<void> => invoke('development:send-message', sessionId, message),
   startDevelopment: (sessionId: string): Promise<void> => invoke('development:start', sessionId),
+  continueDevelopment: (sessionId: string): Promise<void> => invoke('development:continue', sessionId),
+  pauseDevelopment: (sessionId: string): Promise<void> => invoke('development:pause', sessionId),
   stopDevelopment: (sessionId: string): Promise<void> => invoke('development:stop', sessionId),
   deleteDevelopmentSession: (sessionId: string): Promise<void> => invoke('development:delete-session', sessionId),
   subscribeDevelopmentEvents: (listener: (envelope: DevelopmentEventEnvelope) => void): (() => void) => {
@@ -92,8 +94,18 @@ contextBridge.exposeInMainWorld('desktopApi', {
   testWeFlowConnection: (): Promise<WeFlowConnectionResult> => invoke('weflow:test-connection'),
   listWeFlowSessions: (): Promise<WechatSession[]> => invoke('weflow:list-sessions'),
   getOrderDashboard: (): Promise<{ candidates: DealCandidate[]; orders: OrderRecord[]; summary: RevenueSummary }> => invoke('order:get-dashboard'),
-  analyzeOrders: (): Promise<{ candidates: DealCandidate[]; orders: OrderRecord[]; summary: RevenueSummary }> => invoke('order:analyze'),
-  confirmOrderCandidate: (id: string, input: { projectName: string; customerName: string; confirmedAt: number; amount: number | null }): Promise<OrderRecord> => invoke('order:confirm-candidate', id, input),
+  analyzeOrders: (range?: { beginTimestamp?: number; endTimestamp?: number }): Promise<{ candidates: DealCandidate[]; orders: OrderRecord[]; summary: RevenueSummary }> => invoke('order:analyze', range),
+  subscribeOrderAnalysisProgress: (listener: (dashboard: { candidates: DealCandidate[]; orders: OrderRecord[]; summary: RevenueSummary }) => void): (() => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, dashboard: { candidates: DealCandidate[]; orders: OrderRecord[]; summary: RevenueSummary }) => listener(dashboard);
+    ipcRenderer.on('order:analysis-progress', handler);
+    return () => ipcRenderer.off('order:analysis-progress', handler);
+  },
+  getOrderAnalysisDebug: (): Promise<{ startedAt: number; finishedAt: number | null; steps: Array<{ stage: string; message: string; details?: Record<string, unknown> }> } | null> => invoke('order:get-analysis-debug'),
+  listOrderProjectFolders: (): Promise<Array<{ name: string; path: string }>> => invoke('order:list-project-folders'),
+  confirmOrderCandidate: (id: string, input: { projectName: string; customerName: string; confirmedAt: number; amount: number | null; folderMode?: 'new' | 'existing' | 'none'; folderPath?: string | null }): Promise<OrderRecord> => invoke('order:confirm-candidate', id, input),
+  ignoreOrderCandidate: (id: string): Promise<void> => invoke('order:ignore-candidate', id),
+  deleteOrderCandidate: (id: string): Promise<void> => invoke('order:delete-candidate', id),
+  deleteOrder: (id: string): Promise<void> => invoke('order:delete-order', id),
   addOrderTransaction: (id: string, input: { type: 'initial' | 'follow-up' | 'refund'; amount: number; occurredAt: number; note: string; evidenceMessageIds: string[] }): Promise<OrderRecord> => invoke('order:add-transaction', id, input),
   addOrderMaintenance: (id: string, input: { occurredAt: number; content: string; nextFollowUpAt: number | null }): Promise<OrderRecord> => invoke('order:add-maintenance', id, input),
   subscribeOrderChanges: (listener: () => void): (() => void) => {

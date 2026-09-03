@@ -23,6 +23,8 @@ export interface WechatSession {
   name: string;
   type: 'private' | 'group' | 'other';
   remarkName?: string;
+  nickname?: string;
+  avatarUrl?: string;
 }
 
 export interface WechatConnectionResult {

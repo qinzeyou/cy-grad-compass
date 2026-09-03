@@ -71,4 +71,11 @@ export function runMigrations(database: DatabaseSync): void {
   for (const statement of MIGRATIONS) {
     database.exec(statement);
   }
+  for (const [table, column, definition] of [
+    ['deal_candidates', 'user_id', 'TEXT'], ['deal_candidates', 'nickname', 'TEXT'], ['deal_candidates', 'remark_name', 'TEXT'], ['deal_candidates', 'avatar_url', 'TEXT'], ['deal_candidates', 'ignored_at', 'INTEGER'],
+    ['orders', 'nickname', 'TEXT'], ['orders', 'remark_name', 'TEXT'], ['orders', 'avatar_url', 'TEXT'],
+  ]) {
+    const exists = database.prepare(`PRAGMA table_info(${table})`).all().some((row: any) => row.name === column);
+    if (!exists) database.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+  }
 }

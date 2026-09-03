@@ -31,6 +31,10 @@ export interface DealCandidate {
   evidence: WechatMessage[];
   matchedFolder: ProjectFolder | null;
   status: DealCandidateStatus;
+  userId?: string;
+  nickname?: string;
+  remarkName?: string;
+  avatarUrl?: string;
 }
 
 export interface Transaction {
@@ -52,6 +56,9 @@ export interface MaintenanceRecord {
 export interface OrderRecord {
   id: string;
   customerName: string;
+  nickname?: string;
+  remarkName?: string;
+  avatarUrl?: string;
   sessionId: string;
   projectName: string;
   folderPath: string | null;

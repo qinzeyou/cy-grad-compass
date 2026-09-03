@@ -6,6 +6,8 @@ export const getSession = (id: string): Promise<DevelopmentSessionDetail> => win
 export const createSession = (projectId: string): Promise<DevelopmentSessionDetail> => window.desktopApi.createDevelopmentSession(projectId);
 export const sendMessage = (id: string, text: string): Promise<void> => window.desktopApi.sendDevelopmentMessage(id, text);
 export const startDevelopment = (id: string): Promise<void> => window.desktopApi.startDevelopment(id);
+export const continueDevelopment = (id: string): Promise<void> => window.desktopApi.continueDevelopment(id);
+export const pauseDevelopment = (id: string): Promise<void> => window.desktopApi.pauseDevelopment(id);
 export const stopDevelopment = (id: string): Promise<void> => window.desktopApi.stopDevelopment(id);
 export const deleteSession = (id: string): Promise<void> => window.desktopApi.deleteDevelopmentSession(id);
 export const subscribeDevelopmentEvents = (listener: (event: DevelopmentEventEnvelope) => void): (() => void) => window.desktopApi.subscribeDevelopmentEvents(listener);

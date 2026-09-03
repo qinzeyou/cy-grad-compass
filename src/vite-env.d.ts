@@ -52,6 +52,8 @@ declare global {
       createDevelopmentSession: (projectId: string) => Promise<DevelopmentSessionDetail>;
       sendDevelopmentMessage: (sessionId: string, message: string) => Promise<void>;
       startDevelopment: (sessionId: string) => Promise<void>;
+      continueDevelopment: (sessionId: string) => Promise<void>;
+      pauseDevelopment: (sessionId: string) => Promise<void>;
       stopDevelopment: (sessionId: string) => Promise<void>;
       deleteDevelopmentSession: (sessionId: string) => Promise<void>;
       subscribeDevelopmentEvents: (listener: (envelope: DevelopmentEventEnvelope) => void) => () => void;
@@ -67,8 +69,14 @@ declare global {
       testWeFlowConnection: () => Promise<WeFlowConnectionResult>;
       listWeFlowSessions: () => Promise<WechatSession[]>;
       getOrderDashboard: () => Promise<{ candidates: DealCandidate[]; orders: OrderRecord[]; summary: RevenueSummary }>;
-      analyzeOrders: () => Promise<{ candidates: DealCandidate[]; orders: OrderRecord[]; summary: RevenueSummary }>;
-      confirmOrderCandidate: (id: string, input: { projectName: string; customerName: string; confirmedAt: number; amount: number | null }) => Promise<OrderRecord>;
+      analyzeOrders: (range?: { beginTimestamp?: number; endTimestamp?: number }) => Promise<{ candidates: DealCandidate[]; orders: OrderRecord[]; summary: RevenueSummary }>;
+      subscribeOrderAnalysisProgress: (listener: (dashboard: { candidates: DealCandidate[]; orders: OrderRecord[]; summary: RevenueSummary }) => void) => () => void;
+      getOrderAnalysisDebug?: () => Promise<{ startedAt: number; finishedAt: number | null; steps: Array<{ stage: string; message: string; details?: Record<string, unknown> }> } | null>;
+      listOrderProjectFolders: () => Promise<Array<{ name: string; path: string }>>;
+      confirmOrderCandidate: (id: string, input: { projectName: string; customerName: string; confirmedAt: number; amount: number | null; folderMode?: 'new' | 'existing' | 'none'; folderPath?: string | null }) => Promise<OrderRecord>;
+      ignoreOrderCandidate: (id: string) => Promise<void>;
+      deleteOrderCandidate: (id: string) => Promise<void>;
+      deleteOrder: (id: string) => Promise<void>;
       addOrderTransaction: (id: string, input: { type: 'initial' | 'follow-up' | 'refund'; amount: number; occurredAt: number; note: string; evidenceMessageIds: string[] }) => Promise<OrderRecord>;
       addOrderMaintenance: (id: string, input: { occurredAt: number; content: string; nextFollowUpAt: number | null }) => Promise<OrderRecord>;
       subscribeOrderChanges: (listener: () => void) => () => void;

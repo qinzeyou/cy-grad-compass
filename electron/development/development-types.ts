@@ -34,7 +34,7 @@ export type DevelopmentEvent =
   | { type: 'turn-completed' }
   | { type: 'run-error'; message: string }
   | { type: 'log'; text: string }
-  | { type: 'process-exited'; exitCode: number; stopped: boolean };
+  | { type: 'process-exited'; exitCode: number; stopped: boolean; paused?: boolean };
 
 export interface DevelopmentEventEnvelope {
   sessionId: string;

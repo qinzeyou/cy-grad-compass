@@ -28,6 +28,8 @@ export function registerDevelopmentIpcHandlers(
   registrar.handle('development:create-session', (_event, projectId) => service.createSession(text(projectId, '项目编号')));
   registrar.handle('development:send-message', (_event, id, message) => service.sendMessage(text(id, '开发会话编号'), text(message, '消息')));
   registrar.handle('development:start', (_event, id) => service.startDevelopment(text(id, '开发会话编号')));
+  registrar.handle('development:continue', (_event, id) => service.continueDevelopment(text(id, '开发会话编号')));
+  registrar.handle('development:pause', (_event, id) => service.pause(text(id, '开发会话编号')));
   registrar.handle('development:stop', (_event, id) => service.stop(text(id, '开发会话编号')));
   registrar.handle('development:delete-session', (_event, id) => service.deleteSession(text(id, '开发会话编号')));
 }

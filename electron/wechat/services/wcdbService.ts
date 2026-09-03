@@ -156,6 +156,10 @@ export class WcdbService {
     return this.callWorker('testConnection', { accountDir, hexKey })
   }
 
+  async initialize(): Promise<boolean> {
+    return this.callWorker('initialize')
+  }
+
   /**
    * 打开数据库
    * @param accountDir 账号目录的完整路径

@@ -10,7 +10,8 @@ import type {
   DevelopmentSessionDetail,
 } from './development-types.js';
 
-const DEVELOPMENT_PROMPT = '需求已经确认。请根据以上对话开始实施，遵循项目现有规范，完成后运行必要检查并汇报结果。';
+const DEVELOPMENT_PROMPT = '需求已经确认。请先检查当前工作区：如果是空项目或模板项目，就从 0 到 1 建立所需结构；如果已有代码，则在现有实现基础上增量修改或添加功能。遵循项目现有规范，完成后运行必要检查并汇报结果。';
+const CONTINUE_PROMPT = '请继续完成当前项目开发任务。先检查当前工作区和已有改动，从上次中断的位置继续，保留已完成内容，不要覆盖无关代码，完成后运行必要检查并汇报结果。';
 
 function currentTime(): string { return new Date().toISOString(); }
 
@@ -87,6 +88,19 @@ export class DevelopmentService {
     ensureProjectDirectory(this.projectPath(session.projectId));
     this.pendingDevelopmentSessionId = sessionId;
     await this.run(sessionId, { projectPath: this.projectPath(session.projectId), threadId: session.codexThreadId, prompt: DEVELOPMENT_PROMPT, sandbox: 'workspace-write' });
+  }
+
+  async continueDevelopment(sessionId: string): Promise<void> {
+    const session = this.getSession(sessionId);
+    if (session.codexThreadId === null) throw new Error('没有可继续的开发线程');
+    if (this.activeSessionId !== null) throw new Error('已有 AI 任务正在运行');
+    ensureProjectDirectory(this.projectPath(session.projectId));
+    await this.run(sessionId, { projectPath: this.projectPath(session.projectId), threadId: session.codexThreadId, prompt: CONTINUE_PROMPT, sandbox: 'workspace-write' });
+  }
+
+  async pause(sessionId: string): Promise<void> {
+    if (this.activeSessionId !== sessionId) return;
+    await this.controller.stop(true);
   }
 
   async stop(sessionId: string): Promise<void> {

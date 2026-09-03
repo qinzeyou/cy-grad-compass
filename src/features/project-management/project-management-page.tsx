@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type ReactElement } from 'react';
-import { Button, Modal, Typography } from 'antd';
+import { Button, Modal } from 'antd';
 import { changeProjectStatus, fetchProjectList } from '../project-statistics/project-statistics-api';
 import type { Project, ProjectStatus, ProjectStatusFilter } from '../project-statistics/project-statistics-types';
 import { openProjectPath, updateProject } from './project-management-api';
@@ -112,10 +112,6 @@ export function ProjectManagementPage({ initialStatus = 'all', onDevelop }: Proj
       )}
 
       <div className="management-toolbar">
-        <div>
-          <Typography.Text className="eyebrow">PROJECT CONTROL</Typography.Text>
-          <Typography.Text type="secondary">管理项目状态与开发入口</Typography.Text>
-        </div>
         <div className="management-actions">
           <Button type="primary" onClick={() => setCreateOpen(true)}>新建项目</Button>
           <Button onClick={() => setTemplateOpen(true)}>模板管理</Button>

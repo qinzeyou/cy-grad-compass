@@ -15,6 +15,11 @@ export interface CodexChildProcess {
 export type SpawnCodexProcess = (command: string, args: string[], options: { cwd: string }) => CodexChildProcess;
 export type CodexSandbox = 'read-only' | 'workspace-write';
 
+export function buildCodexSpawnInvocation(command: string, args: string[]): { command: string; args: string[] } {
+  if (process.platform !== 'win32' || !command.endsWith('.cmd')) return { command, args };
+  return { command: 'cmd.exe', args: ['/d', '/s', '/c', command, ...args] };
+}
+
 export interface CodexRunRequest {
   projectPath: string;
   threadId?: string;
@@ -26,10 +31,12 @@ interface ActiveRun {
   child: CodexChildProcess;
   resolve: () => void;
   stopped: boolean;
+  paused: boolean;
 }
 
 function defaultSpawn(command: string, args: string[], options: { cwd: string }): CodexChildProcess {
-  return spawn(command, args, { cwd: options.cwd, shell: false, windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'] }) as unknown as ChildProcess;
+  const invocation = buildCodexSpawnInvocation(command, args);
+  return spawn(invocation.command, invocation.args, { cwd: options.cwd, shell: false, windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'] }) as unknown as ChildProcess;
 }
 
 // 中文注释：控制器只管理一个 Codex 子进程，避免多个任务同时修改同一项目目录。
@@ -60,7 +67,7 @@ export class CodexController {
     if (child.stdin === null) return Promise.reject(new Error('Codex stdin 不可用'));
     let resolveRun!: () => void;
     const completion = new Promise<void>((resolve) => { resolveRun = resolve; });
-    const run: ActiveRun = { child, resolve: resolveRun, stopped: false };
+    const run: ActiveRun = { child, resolve: resolveRun, stopped: false, paused: false };
     this.activeRun = run;
     this.attachStream(child.stdout, (line) => { const event = parseCodexJsonLine(line); if (event) this.emit(event); });
     this.attachStream(child.stderr, (line) => { if (line.trim()) this.emit({ type: 'log', text: line }); });
@@ -68,17 +75,18 @@ export class CodexController {
     child.once('close', (code) => {
       if (this.activeRun !== run) return;
       this.activeRun = null;
-      this.emit({ type: 'process-exited', exitCode: code ?? 1, stopped: run.stopped });
+      this.emit({ type: 'process-exited', exitCode: code ?? 1, stopped: run.stopped, ...(run.paused ? { paused: true } : {}) });
       run.resolve();
     });
     child.stdin.end(request.prompt);
     return completion;
   }
 
-  async stop(): Promise<void> {
+  async stop(paused = false): Promise<void> {
     const run = this.activeRun;
     if (run === null) return;
     run.stopped = true;
+    run.paused = paused;
     await this.terminateProcess(run.child.pid);
     await new Promise<void>((resolve) => { const check = () => this.activeRun === run ? setTimeout(check, 10) : resolve(); check(); });
   }

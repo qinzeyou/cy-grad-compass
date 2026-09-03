@@ -36,7 +36,7 @@ let orderService: OrderService | null = null;
 async function restoreWechatRuntime(): Promise<void> {
   const config = await readWechatConfig(app.getPath('userData'));
   if (!config.enabled || !canConnectWechat(config)) {
-    if (wechatService.isReady()) await wechatService.stop();
+    if (wechatService.isConnected()) await wechatService.stop();
     return;
   }
   const connection = await wechatService.connect(config);
@@ -81,9 +81,11 @@ function createWindow(): void {
   }
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   // 中文注释：无边框窗口使用自定义窗口栏，关闭 Electron 默认 File/Edit/View 菜单。
   Menu.setApplicationMenu(null);
+  // WCDB 的安全初始化必须在渲染窗口启动前完成，后续连接只复用已初始化的 Worker。
+  if (!await wechatService.prepare()) console.error('[wechat] WCDB 运行时初始化失败');
   // 中文注释：数据库在应用就绪后打开，userData 路径此时才可用。
   database = openDatabase(getDatabaseFilePath());
   const templatesDir = getTemplatesDirectory();

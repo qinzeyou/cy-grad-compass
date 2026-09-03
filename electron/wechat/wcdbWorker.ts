@@ -37,6 +37,9 @@ if (parentPort) {
                 case 'testConnection':
                     result = await core.testConnection(payload.accountDir, payload.hexKey)
                     break
+                case 'initialize':
+                    result = await core.initialize()
+                    break
                 case 'open':
                     result = await core.open(payload.accountDir, payload.hexKey)
                     break

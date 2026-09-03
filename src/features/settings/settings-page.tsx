@@ -4,16 +4,17 @@ import { Typography } from 'antd';
 import { AiSettingsPanel } from './ai-settings-panel';
 import { WechatSettingsPanel } from './wechat-settings-panel';
 
-export function SettingsPage(): ReactElement {
+interface SettingsPageProps { section: 'ai' | 'wechat'; }
+
+export function SettingsPage({ section }: SettingsPageProps): ReactElement {
   return (
-    <div className="settings-layout">
+    <div className="settings-layout settings-layout-centered">
       <div className="settings-heading">
         <Typography.Text className="eyebrow">SETTINGS</Typography.Text>
         <Typography.Title level={3} style={{ margin: '6px 0 0' }}>设置</Typography.Title>
         <Typography.Text type="secondary">配置 DeepSeek 与微信数据源并验证连通性</Typography.Text>
       </div>
-      <AiSettingsPanel />
-      <WechatSettingsPanel />
+      {section === 'ai' ? <AiSettingsPanel /> : <WechatSettingsPanel />}
     </div>
   );
 }

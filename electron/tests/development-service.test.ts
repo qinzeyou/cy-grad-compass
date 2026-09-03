@@ -88,3 +88,18 @@ test('删除开发会话及其消息', async () => {
     assert.equal(context.repository.listSessions().some((item) => item.id === session.id), false);
   } finally { context.cleanup(); }
 });
+
+test('继续开发复用已有 thread 并使用 workspace-write', async () => {
+  const context = fixture();
+  try {
+    const session = context.service.createSession('project-1');
+    context.repository.saveThreadId(session.id, 'thread-1', new Date().toISOString());
+    const run = context.service.continueDevelopment(session.id);
+    context.controller.emit({ type: 'process-exited', exitCode: 0, stopped: false });
+    context.controller.resolve();
+    await run;
+    assert.equal(context.controller.requests[0]?.threadId, 'thread-1');
+    assert.equal(context.controller.requests[0]?.sandbox, 'workspace-write');
+    assert.match(context.controller.requests[0]?.prompt ?? '', /继续/);
+  } finally { context.cleanup(); }
+});
