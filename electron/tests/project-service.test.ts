@@ -209,3 +209,22 @@ test('按 id 查询项目，不存在时报业务错误', async () => {
     context.cleanup();
   }
 });
+
+test('登记本地项目目录会复用同一路径的项目记录', async () => {
+  const context = createTestContext();
+  try {
+    const existingPath = join(context.directory, '已有项目');
+    mkdirSync(existingPath);
+
+    const first = await context.service.registerExistingDirectory(existingPath);
+    const second = await context.service.registerExistingDirectory(existingPath);
+
+    assert.equal(first.name, '已有项目');
+    assert.equal(first.path, existingPath);
+    assert.equal(first.templateId, 'external');
+    assert.equal(second.id, first.id);
+    assert.equal(context.service.list({}).length, 1);
+  } finally {
+    context.cleanup();
+  }
+});

@@ -129,4 +129,19 @@ export class DevelopmentRepository {
       throw error;
     }
   }
+
+  deleteWorkspace(projectId: string, deleteProject: () => boolean): void {
+    this.database.exec('BEGIN');
+    try {
+      this.database.prepare(
+        'DELETE FROM development_messages WHERE session_id IN (SELECT id FROM development_sessions WHERE project_id = ?)',
+      ).run(projectId);
+      this.database.prepare('DELETE FROM development_sessions WHERE project_id = ?').run(projectId);
+      if (!deleteProject()) throw new Error('项目不存在或已被删除');
+      this.database.exec('COMMIT');
+    } catch (error) {
+      this.database.exec('ROLLBACK');
+      throw error;
+    }
+  }
 }

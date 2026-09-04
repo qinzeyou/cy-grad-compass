@@ -5,6 +5,7 @@ import { DevelopmentRepository } from './development-repository.js';
 import { CodexController, type CodexRunRequest } from './codex-controller.js';
 import type {
   DevelopmentEvent,
+  FeatureExtractionCandidate,
   DevelopmentMessage,
   DevelopmentSession,
   DevelopmentSessionDetail,
@@ -13,6 +14,8 @@ import type { SkillService } from '../skills/skill-service.js';
 
 const DEVELOPMENT_PROMPT = '需求已经确认。请先检查当前工作区：如果是空项目或模板项目，就从 0 到 1 建立所需结构；如果已有代码，则在现有实现基础上增量修改或添加功能。遵循项目现有规范，完成后运行必要检查并汇报结果。';
 const CONTINUE_PROMPT = '请继续完成当前项目开发任务。先检查当前工作区和已有改动，从上次中断的位置继续，保留已完成内容，不要覆盖无关代码，完成后运行必要检查并汇报结果。';
+const FEATURE_EXTRACTION_PROMPT = `你正在进行功能封装。只能读取当前工作区，严禁创建、修改或删除任何文件。根据用户要求定位并分析可复用功能，先用中文说明分析结果。最后必须追加一个 <skill-candidate> JSON 对象，字段为 name、description、instructions；instructions 必须是完整中文 SKILL.md，含 frontmatter、适用场景、扫描步骤、实现逻辑、验证方式。除该标签外不要输出候选 JSON。`;
+const FEATURE_EXTRACTION_MISSING = 'AI 未生成可保存的功能说明，请重新描述要封装的功能';
 
 function currentTime(): string { return new Date().toISOString(); }
 
@@ -30,13 +33,28 @@ function cleanMessage(text: string): string {
 }
 
 type ControllerLike = Pick<CodexController, 'run' | 'stop' | 'subscribe'>;
-export type DevelopmentMode = 'discussion' | 'development';
+export type DevelopmentMode = 'discussion' | 'development' | 'feature-extraction';
+
+function featureCandidate(text: string): { content: string; candidate?: FeatureExtractionCandidate; error?: string } {
+  const match = /<skill-candidate>\s*([\s\S]*?)\s*<\/skill-candidate>/i.exec(text);
+  if (match === null) return { content: text.trim(), error: FEATURE_EXTRACTION_MISSING };
+  try {
+    const value = JSON.parse(match[1]) as Partial<FeatureExtractionCandidate>;
+    if (typeof value.name !== 'string' || !value.name.trim() || typeof value.description !== 'string' || !value.description.trim() || typeof value.instructions !== 'string' || value.instructions.trim().length < 20) throw new Error('invalid');
+    return { content: text.replace(match[0], '').trim(), candidate: { name: value.name.trim(), description: value.description.trim(), instructions: value.instructions.trim() } };
+  } catch {
+    return { content: text.replace(match[0], '').trim(), error: 'AI 返回的功能说明格式无效，请重新尝试' };
+  }
+}
 
 // 中文注释：服务层是项目、数据库和 Codex 之间的唯一业务边界，渲染进程不直接操作它们。
 export class DevelopmentService {
   private readonly unsubscribeController: () => void;
   private activeSessionId: string | null = null;
   private pendingDevelopmentSessionId: string | null = null;
+  private featureExtractionSessionId: string | null = null;
+  private featureExtractionSucceeded = false;
+  private featureExtractionError = FEATURE_EXTRACTION_MISSING;
 
   constructor(
     private readonly projectRepository: ProjectRepository,
@@ -62,6 +80,14 @@ export class DevelopmentService {
     this.developmentRepository.deleteSession(id);
   }
 
+  deleteWorkspace(projectId: string): void {
+    if (this.projectRepository.findById(projectId) === null) throw new Error('项目不存在');
+    if (this.activeSessionId !== null && this.developmentRepository.getSession(this.activeSessionId)?.projectId === projectId) {
+      throw new Error('运行中的会话不能删除');
+    }
+    this.developmentRepository.deleteWorkspace(projectId, () => this.projectRepository.delete(projectId));
+  }
+
   createSession(projectId: string): DevelopmentSessionDetail {
     const project = this.projectRepository.findById(projectId);
     if (project === null) throw new Error('项目不存在');
@@ -81,10 +107,23 @@ export class DevelopmentService {
     if (session.messages.length === 0) this.developmentRepository.updateTitle(sessionId, content.slice(0, 22), timestamp);
     ensureProjectDirectory(this.projectPath(session.projectId));
     // 中文注释：下拉模式只影响当前消息意图；真正的写权限必须由“确认开发”切换会话阶段，避免误触直接改文件。
-    const selectedMode = session.phase === 'development' ? 'development' : 'discussion';
+    const extraction = mode === 'feature-extraction';
+    const selectedMode = extraction ? 'feature-extraction' : session.phase === 'development' ? 'development' : 'discussion';
     const skillPrompt = skillId === undefined ? '' : `\n\n请参考技能“${this.skillService?.get(skillId).name ?? ''}”：\n${this.skillService?.get(skillId).instructions ?? ''}`;
-    const request: CodexRunRequest = { projectPath: this.projectPath(session.projectId), prompt: `[当前模式：${selectedMode}]\n${content}${skillPrompt}`, sandbox: selectedMode === 'discussion' ? 'read-only' : 'workspace-write', ...(session.codexThreadId === null ? {} : { threadId: session.codexThreadId }) };
-    await this.run(sessionId, request);
+    if (extraction) {
+      this.featureExtractionSessionId = sessionId;
+      this.featureExtractionSucceeded = false;
+      this.featureExtractionError = FEATURE_EXTRACTION_MISSING;
+    }
+    const prompt = extraction ? `${FEATURE_EXTRACTION_PROMPT}\n\n用户要求：${content}` : `[当前模式：${selectedMode}]\n${content}${skillPrompt}`;
+    const request: CodexRunRequest = { projectPath: this.projectPath(session.projectId), prompt, sandbox: selectedMode === 'development' ? 'workspace-write' : 'read-only', ...(session.codexThreadId === null ? {} : { threadId: session.codexThreadId }) };
+    try { await this.run(sessionId, request); } finally {
+      if (this.featureExtractionSessionId === sessionId) {
+        this.featureExtractionSessionId = null;
+        this.featureExtractionSucceeded = false;
+        this.featureExtractionError = FEATURE_EXTRACTION_MISSING;
+      }
+    }
   }
 
   async startDevelopment(sessionId: string, skillId?: string): Promise<void> {
@@ -141,12 +180,26 @@ export class DevelopmentService {
     const sessionId = this.activeSessionId;
     if (sessionId === null) return;
     if (event.type === 'thread-started') this.developmentRepository.saveThreadId(sessionId, event.threadId, currentTime());
-    if (event.type === 'assistant-message') this.developmentRepository.addMessage({ id: randomUUID(), sessionId, role: 'assistant', content: event.text, createdAt: currentTime() });
+    if (event.type === 'assistant-message') {
+      if (this.featureExtractionSessionId === sessionId) {
+        const result = featureCandidate(event.text);
+        const content = result.content || '功能分析完成，等待保存确认。';
+        this.developmentRepository.addMessage({ id: randomUUID(), sessionId, role: 'assistant', content, createdAt: currentTime() });
+        this.publish(sessionId, { type: 'assistant-message', text: content });
+        if (result.candidate) {
+          this.featureExtractionSucceeded = true;
+          this.publish(sessionId, { type: 'feature-extraction-ready', candidate: result.candidate });
+        } else this.featureExtractionError = result.error ?? '功能封装失败，请重试';
+        return;
+      }
+      this.developmentRepository.addMessage({ id: randomUUID(), sessionId, role: 'assistant', content: event.text, createdAt: currentTime() });
+    }
     if (event.type === 'turn-started' && this.pendingDevelopmentSessionId === sessionId) {
       this.developmentRepository.updatePhase(sessionId, 'development', currentTime());
       this.pendingDevelopmentSessionId = null;
     }
     if (event.type === 'process-exited') {
+      if (this.featureExtractionSessionId === sessionId && !this.featureExtractionSucceeded && !event.stopped && event.exitCode === 0) this.publish(sessionId, { type: 'feature-extraction-failed', message: this.featureExtractionError });
       this.activeSessionId = null;
       this.pendingDevelopmentSessionId = null;
     }

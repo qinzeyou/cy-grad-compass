@@ -1,10 +1,14 @@
-import type { DevelopmentEventEnvelope, DevelopmentSession, DevelopmentSessionDetail, SkillFeature, SkillFeatureDetail, SkillSummary } from './project-development-types';
+import type { DevelopmentEventEnvelope, DevelopmentMode, DevelopmentSession, DevelopmentSessionDetail, SkillFeature, SkillFeatureDetail, SkillSummary } from './project-development-types';
 
 // 中文注释：渲染进程只通过这一层访问 preload，避免页面组件依赖 Electron API 细节。
 export const listSessions = (): Promise<DevelopmentSession[]> => window.desktopApi.listDevelopmentSessions();
 export const getSession = (id: string): Promise<DevelopmentSessionDetail> => window.desktopApi.getDevelopmentSession(id);
 export const createSession = (projectId: string): Promise<DevelopmentSessionDetail> => window.desktopApi.createDevelopmentSession(projectId);
-export const sendMessage = (id: string, text: string, mode: 'discussion' | 'development', skillId?: string): Promise<void> => window.desktopApi.sendDevelopmentMessage(id, text, mode, skillId);
+export const sendMessage = (id: string, text: string, mode: DevelopmentMode, skillId?: string): Promise<void> => window.desktopApi.sendDevelopmentMessage(id, text, mode, skillId);
+export const selectWorkspaceDirectory = (): Promise<string | null> => window.desktopApi.selectWorkspaceDirectory();
+export const registerProjectDirectory = (path: string) => window.desktopApi.registerProjectDirectory(path);
+export const openProjectPath = (id: string): Promise<void> => window.desktopApi.openProjectPath(id);
+export const deleteWorkspace = (id: string): Promise<void> => window.desktopApi.deleteDevelopmentWorkspace(id);
 export const startDevelopment = (id: string, skillId?: string): Promise<void> => window.desktopApi.startDevelopment(id, skillId);
 export const continueDevelopment = (id: string): Promise<void> => window.desktopApi.continueDevelopment(id);
 export const pauseDevelopment = (id: string): Promise<void> => window.desktopApi.pauseDevelopment(id);

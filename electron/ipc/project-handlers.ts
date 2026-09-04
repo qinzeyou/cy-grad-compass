@@ -25,6 +25,11 @@ export function registerProjectIpcHandlers(service: ProjectService): void {
     return service.createProject({ name: input.name, targetDirectory: input.targetDirectory });
   });
 
+  ipcMain.handle('project:register-directory', (_event, directory: unknown) => {
+    if (typeof directory !== 'string') throw new Error('缺少项目目录');
+    return service.registerExistingDirectory(directory);
+  });
+
   ipcMain.handle('project:update', (_event, input: ProjectUpdateInput) => {
     if (typeof input?.id !== 'string' || input.id.trim() === '') {
       throw new Error('缺少项目编号');
@@ -60,6 +65,15 @@ export function registerProjectIpcHandlers(service: ProjectService): void {
       return null;
     }
     return filePaths[0];
+  });
+
+  ipcMain.handle('dialog:select-workspace-directory', async () => {
+    const { canceled, filePaths } = await dialog.showOpenDialog({
+      title: '选择本地项目文件夹',
+      buttonLabel: '作为工作区打开',
+      properties: ['openDirectory'],
+    });
+    return canceled || filePaths.length === 0 ? null : filePaths[0];
   });
 
   ipcMain.handle('dialog:select-file', async () => {

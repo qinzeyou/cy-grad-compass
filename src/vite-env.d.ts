@@ -38,6 +38,8 @@ declare global {
       closeWindow: () => Promise<void>;
       isMaximized: () => Promise<boolean>;
       selectDirectory: () => Promise<string | null>;
+      selectWorkspaceDirectory: () => Promise<string | null>;
+      registerProjectDirectory: (path: string) => Promise<Project>;
       selectFile: () => Promise<string | null>;
       getProjectStatistics: () => Promise<ProjectStatistics>;
       listProjects: (query: ProjectListQuery) => Promise<Project[]>;
@@ -51,12 +53,13 @@ declare global {
       listDevelopmentSessions: () => Promise<DevelopmentSession[]>;
       getDevelopmentSession: (id: string) => Promise<DevelopmentSessionDetail>;
       createDevelopmentSession: (projectId: string) => Promise<DevelopmentSessionDetail>;
-      sendDevelopmentMessage: (sessionId: string, message: string, mode?: 'discussion' | 'development', skillId?: string) => Promise<void>;
+      sendDevelopmentMessage: (sessionId: string, message: string, mode?: 'discussion' | 'development' | 'feature-extraction', skillId?: string) => Promise<void>;
       startDevelopment: (sessionId: string, skillId?: string) => Promise<void>;
       continueDevelopment: (sessionId: string) => Promise<void>;
       pauseDevelopment: (sessionId: string) => Promise<void>;
       stopDevelopment: (sessionId: string) => Promise<void>;
       deleteDevelopmentSession: (sessionId: string) => Promise<void>;
+      deleteDevelopmentWorkspace: (projectId: string) => Promise<void>;
       listSkills: () => Promise<SkillSummary[]>;
       listSkillFeatures: () => Promise<SkillFeature[]>;
       getSkill: (id: string) => Promise<SkillDetail>;

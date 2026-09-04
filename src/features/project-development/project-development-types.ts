@@ -1,4 +1,5 @@
 export type DevelopmentPhase = 'discussion' | 'development';
+export type DevelopmentMode = DevelopmentPhase | 'feature-extraction';
 export type DevelopmentRunStatus = 'idle' | 'running' | 'paused' | 'completed' | 'error' | 'stopped';
 
 export interface DevelopmentMessage { id: string; sessionId: string; role: 'user' | 'assistant'; content: string; createdAt: string; }
@@ -8,6 +9,8 @@ export type DevelopmentEvent =
   | { type: 'thread-started'; threadId: string }
   | { type: 'turn-started' }
   | { type: 'assistant-message'; text: string }
+  | { type: 'feature-extraction-ready'; candidate: FeatureExtractionCandidate }
+  | { type: 'feature-extraction-failed'; message: string }
   | { type: 'command-started'; id: string; command: string }
   | { type: 'command-completed'; id: string; command: string; output: string; exitCode: number | null }
   | { type: 'file-change'; paths: string[] }
@@ -16,6 +19,7 @@ export type DevelopmentEvent =
   | { type: 'log'; text: string }
   | { type: 'process-exited'; exitCode: number; stopped: boolean; paused?: boolean };
 export interface DevelopmentEventEnvelope { sessionId: string; event: DevelopmentEvent; }
+export interface FeatureExtractionCandidate { name: string; description: string; instructions: string; }
 export interface DevelopmentRunView { status: DevelopmentRunStatus; startedAt: number | null; commandCount: number; changedPaths: string[]; currentAction: string; logs: Array<{ id: string; label: string; detail?: string }>; }
 export interface SkillSummary { id: string; name: string; description: string; source: 'imported' | 'extracted'; createdAt: string; updatedAt: string; }
 export interface SkillFeature { id: string; skillId: string; name: string; description: string; skillName: string; source: 'imported' | 'extracted'; updatedAt: string; }

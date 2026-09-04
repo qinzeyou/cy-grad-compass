@@ -59,6 +59,8 @@ contextBridge.exposeInMainWorld('desktopApi', {
     invoke('project:update', { id, status }),
   openProjectPath: (id: string): Promise<void> => invoke('project:open-path', id),
   selectDirectory: (): Promise<string | null> => invoke('dialog:select-directory'),
+  selectWorkspaceDirectory: (): Promise<string | null> => invoke('dialog:select-workspace-directory'),
+  registerProjectDirectory: (path: string): Promise<Project> => invoke('project:register-directory', path),
   selectFile: (): Promise<string | null> => invoke('dialog:select-file'),
 
   // 模板管理
@@ -70,12 +72,13 @@ contextBridge.exposeInMainWorld('desktopApi', {
   listDevelopmentSessions: (): Promise<DevelopmentSession[]> => invoke('development:list-sessions'),
   getDevelopmentSession: (id: string): Promise<DevelopmentSessionDetail> => invoke('development:get-session', id),
   createDevelopmentSession: (projectId: string): Promise<DevelopmentSessionDetail> => invoke('development:create-session', projectId),
-  sendDevelopmentMessage: (sessionId: string, message: string, mode?: 'discussion' | 'development', skillId?: string): Promise<void> => invoke('development:send-message', sessionId, message, mode, skillId),
+  sendDevelopmentMessage: (sessionId: string, message: string, mode?: 'discussion' | 'development' | 'feature-extraction', skillId?: string): Promise<void> => invoke('development:send-message', sessionId, message, mode, skillId),
   startDevelopment: (sessionId: string, skillId?: string): Promise<void> => invoke('development:start', sessionId, skillId),
   continueDevelopment: (sessionId: string): Promise<void> => invoke('development:continue', sessionId),
   pauseDevelopment: (sessionId: string): Promise<void> => invoke('development:pause', sessionId),
   stopDevelopment: (sessionId: string): Promise<void> => invoke('development:stop', sessionId),
   deleteDevelopmentSession: (sessionId: string): Promise<void> => invoke('development:delete-session', sessionId),
+  deleteDevelopmentWorkspace: (projectId: string): Promise<void> => invoke('development:delete-workspace', projectId),
   listSkills: (): Promise<SkillSummary[]> => invoke('skill:list'),
   listSkillFeatures: (): Promise<SkillFeature[]> => invoke('skill:list-features'),
   getSkill: (id: string): Promise<SkillDetail> => invoke('skill:get', id),

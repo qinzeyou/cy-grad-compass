@@ -26,10 +26,11 @@ export function registerDevelopmentIpcHandlers(
   registrar.handle('development:list-sessions', () => service.listSessions());
   registrar.handle('development:get-session', (_event, id) => service.getSession(text(id, '开发会话编号')));
   registrar.handle('development:create-session', (_event, projectId) => service.createSession(text(projectId, '项目编号')));
-  registrar.handle('development:send-message', (_event, id, message, mode, skillId) => service.sendMessage(text(id, '开发会话编号'), text(message, '消息'), mode === 'development' ? 'development' : 'discussion', typeof skillId === 'string' ? skillId : undefined));
+  registrar.handle('development:send-message', (_event, id, message, mode, skillId) => service.sendMessage(text(id, '开发会话编号'), text(message, '消息'), mode === 'development' || mode === 'feature-extraction' ? mode : 'discussion', typeof skillId === 'string' ? skillId : undefined));
   registrar.handle('development:start', (_event, id, skillId) => service.startDevelopment(text(id, '开发会话编号'), typeof skillId === 'string' ? skillId : undefined));
   registrar.handle('development:continue', (_event, id) => service.continueDevelopment(text(id, '开发会话编号')));
   registrar.handle('development:pause', (_event, id) => service.pause(text(id, '开发会话编号')));
   registrar.handle('development:stop', (_event, id) => service.stop(text(id, '开发会话编号')));
   registrar.handle('development:delete-session', (_event, id) => service.deleteSession(text(id, '开发会话编号')));
+  registrar.handle('development:delete-workspace', (_event, projectId) => service.deleteWorkspace(text(projectId, '项目编号')));
 }

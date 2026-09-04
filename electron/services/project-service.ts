@@ -2,8 +2,8 @@
 // 把数据库异常统一转换成渲染进程可读的中文错误。本模块不依赖 Electron，便于自动化测试。
 
 import { randomUUID } from 'node:crypto';
-import { cp, mkdir, rename, rm, stat } from 'node:fs/promises';
-import { join } from 'node:path';
+import { cp, mkdir, realpath, rename, rm, stat } from 'node:fs/promises';
+import { basename, join } from 'node:path';
 import type { ProjectRepository } from '../database/project-repository.js';
 import type { TemplateRepository } from '../database/template-repository.js';
 import {
@@ -119,6 +119,39 @@ export class ProjectService {
     }
     if (project === null) {
       throw new Error('项目不存在或已被删除');
+    }
+    return project;
+  }
+
+  // 中文注释：已有项目只登记目录，不复制、移动或写入目录中的任何文件。
+  async registerExistingDirectory(directory: string): Promise<Project> {
+    const source = directory.trim();
+    if (!source) throw new Error('请选择本地项目文件夹');
+    let projectPath: string;
+    try {
+      projectPath = await realpath(source);
+      if (!(await stat(projectPath)).isDirectory()) throw new Error('not-directory');
+    } catch {
+      throw new Error('项目目录不存在，请重新选择');
+    }
+    const existing = this.repository.findByPath(projectPath);
+    if (existing !== null) return existing;
+    const now = new Date().toISOString();
+    const project: Project = {
+      id: randomUUID(),
+      name: basename(projectPath),
+      path: projectPath,
+      status: 'in-progress',
+      templateId: 'external',
+      createdAt: now,
+      updatedAt: now,
+    };
+    try {
+      this.repository.insert(project);
+    } catch {
+      const saved = this.repository.findByPath(projectPath);
+      if (saved !== null) return saved;
+      throw new Error('项目记录保存失败，请稍后重试');
     }
     return project;
   }

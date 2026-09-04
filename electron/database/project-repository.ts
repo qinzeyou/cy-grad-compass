@@ -138,6 +138,16 @@ export class ProjectRepository {
     return row === undefined ? null : mapProjectRow(row);
   }
 
+  findByPath(path: string): Project | null {
+    const row = this.database
+      .prepare(
+        `SELECT id, name, path, status, template_id, created_at, updated_at
+         FROM projects WHERE path = ?`,
+      )
+      .get(path) as unknown as ProjectRow | undefined;
+    return row === undefined ? null : mapProjectRow(row);
+  }
+
   // 中文注释：写入项目记录，供创建流程、演示数据与自动化测试使用。
   insert(project: Project): void {
     this.database
@@ -154,6 +164,11 @@ export class ProjectRepository {
         project.createdAt,
         project.updatedAt,
       );
+  }
+
+  delete(id: string): boolean {
+    const result = this.database.prepare('DELETE FROM projects WHERE id = ?').run(id);
+    return Number(result.changes) > 0;
   }
 }
 

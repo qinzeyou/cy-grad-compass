@@ -1,5 +1,4 @@
-// 中文注释：应用外壳渲染测试。验证侧边菜单出现“设置”项，点击后能切换到
-// AI 设置页，且仪表盘等既有入口仍保留。
+// 中文注释：应用外壳渲染测试。验证默认进入成单分析，并可切换到设置页。
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { App } from './app';
@@ -19,16 +18,19 @@ describe('应用外壳', () => {
 
   it('没有 Electron desktopApi 时仍能渲染浏览器页面', async () => {
     Object.defineProperty(window, 'desktopApi', { configurable: true, writable: true, value: undefined });
+    ensureDesktopApi();
     render(<App />);
 
-    expect(await screen.findByText('仪表盘内容已移除，请从「项目管理」查看项目进度。')).toBeTruthy();
+    expect(await screen.findByText('待确认')).toBeTruthy();
+    expect(screen.getByText('订单')).toBeTruthy();
   });
 
-  it('侧边菜单包含仪表盘、项目管理、项目开发与设置', async () => {
+  it('侧边菜单以成单分析为第一项且不包含仪表盘', async () => {
     installDesktopApiMock();
     render(<App />);
     const labels = (await screen.findAllByRole('menuitem')).map((item) => item.textContent?.trim());
-    expect(labels).toContain('仪表盘');
+    expect(labels[0]).toBe('成单分析');
+    expect(labels).not.toContain('仪表盘');
     expect(labels).toContain('项目管理');
     expect(labels).toContain('项目开发');
     expect(labels).toContain('设置');
@@ -57,7 +59,7 @@ describe('应用外壳', () => {
     expect(await screen.findByText('当前项目直接读取微信数据库并监听新消息，不需要启动其他项目。')).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: /返回/ }));
-    expect(screen.getByRole('menuitem', { name: /仪表盘/ })).toBeTruthy();
+    expect(screen.getByRole('menuitem', { name: /成单分析/ })).toBeTruthy();
     expect(screen.queryByRole('button', { name: /返回/ })).toBeNull();
   });
 
@@ -99,8 +101,10 @@ describe('应用外壳', () => {
     fireEvent.click(await screen.findByRole('button', { name: '查看成单线索：鱼02-28_美妆预约 · 项目' }));
     expect(document.querySelector('.ant-drawer')).toBeNull();
     expect(await screen.findByRole('dialog')).toBeTruthy();
-    expect(within(await screen.findByRole('dialog')).getByText('鱼02-28_美妆预约')).toBeTruthy();
-    expect(document.querySelector('.candidate-modal-actions')).toBeTruthy();
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByText('鱼02-28_美妆预约')).toBeTruthy();
+    expect(dialog.querySelector('.ant-modal-header .candidate-modal-actions')).toBeTruthy();
+    expect(within(dialog).getByRole('button', { name: '关闭' })).toBeTruthy();
     expect(screen.queryByText('s1')).toBeNull();
     expect(screen.queryByText('成交证据')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: /成交聊天记录（1 条）/ }));
@@ -149,6 +153,18 @@ describe('应用外壳', () => {
     await waitFor(() => expect(api.deleteOrderCandidate).toHaveBeenCalledWith('c1'));
   });
 
+  it('关闭确认成单弹窗后不重新打开待确认详情', async () => {
+    const candidate = { id: 'c1', sessionId: 's1', sessionName: '客户', customerName: '客户', projectName: '项目', confidence: 0.9, amount: 800, dealTime: 1, evidence: [], matchedFolder: null, status: 'candidate' as const };
+    installDesktopApiMock({ getOrderDashboard: vi.fn(async () => ({ candidates: [candidate], orders: [], summary: { gross: 0, refunds: 0, net: 0, orderCount: 0, pendingCandidateCount: 1 } })) });
+    render(<App />);
+    fireEvent.click(await screen.findByRole('menuitem', { name: /成单分析/ }));
+    fireEvent.click(await screen.findByRole('button', { name: '查看成单线索：客户 · 项目' }));
+    fireEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: /确认成单/ }));
+    const confirmDialog = screen.getAllByRole('dialog').at(-1)!;
+    fireEvent.click(within(confirmDialog).getByRole('button', { name: 'Close' }));
+    await waitFor(() => expect(document.querySelector('.candidate-detail-modal')?.className).toContain('ant-zoom-leave'));
+  });
+
   it('订单台账使用表格内容区滚动', async () => {
     const order = { id: 'o1', sessionId: 's1', customerName: 'wxid-user', nickname: '微信名称', remarkName: '鱼02-28_美妆预约', avatarUrl: '/avatar.png', projectName: '项目', folderPath: null, confirmedAt: 1, transactions: [{ id: 't1', type: 'initial' as const, amount: 800, occurredAt: 1, note: '', evidenceMessageIds: [] }], maintenance: [], evidence: [] };
     installDesktopApiMock({ getOrderDashboard: vi.fn(async () => ({ candidates: [], orders: [order], summary: { gross: 800, refunds: 0, net: 800, orderCount: 1, pendingCandidateCount: 0 } })) });
@@ -160,6 +176,10 @@ describe('应用外壳', () => {
     expect(screen.queryByText('wxid-user')).toBeNull();
     expect(document.querySelector('.order-table-card .ant-avatar img')?.getAttribute('src')).toBe('/avatar.png');
     await waitFor(() => expect(document.querySelector('.order-table-card .ant-table-body')).toBeTruthy());
+    expect(Array.from(document.querySelectorAll<HTMLTableElement>('.order-table-card table')).some((table) => table.style.width === '760px')).toBe(true);
+    expect(document.querySelector('.order-ledger-table')).toBeTruthy();
+    expect(document.querySelector('.order-ledger-table .ant-table-small')).toBeTruthy();
+    expect(document.querySelector('.order-table-card .ant-pagination')).toBeNull();
   });
 
   it('订单台账按接口返回的客户订单顺序展示', async () => {

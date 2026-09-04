@@ -24,10 +24,18 @@ export interface DevelopmentSessionDetail extends DevelopmentSession {
   messages: DevelopmentMessage[];
 }
 
+export interface FeatureExtractionCandidate {
+  name: string;
+  description: string;
+  instructions: string;
+}
+
 export type DevelopmentEvent =
   | { type: 'thread-started'; threadId: string }
   | { type: 'turn-started' }
   | { type: 'assistant-message'; text: string }
+  | { type: 'feature-extraction-ready'; candidate: FeatureExtractionCandidate }
+  | { type: 'feature-extraction-failed'; message: string }
   | { type: 'command-started'; id: string; command: string }
   | { type: 'command-completed'; id: string; command: string; output: string; exitCode: number | null }
   | { type: 'file-change'; paths: string[] }
